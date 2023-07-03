@@ -13,7 +13,7 @@ import (
 const SysConfigKeyPrefix = "sys:config:"
 
 type Config interface {
-	GetPageList(condition *entity.Config, pageParam *model.PageParam, toEntity any, orderBy ...string) *model.PageResult
+	GetPageList(condition *entity.Config, pageParam *model.PageParam, toEntity any, orderBy ...string) *model.PageResult[any]
 
 	Save(config *entity.Config)
 
@@ -31,7 +31,7 @@ type configAppImpl struct {
 	configRepo repository.Config
 }
 
-func (a *configAppImpl) GetPageList(condition *entity.Config, pageParam *model.PageParam, toEntity any, orderBy ...string) *model.PageResult {
+func (a *configAppImpl) GetPageList(condition *entity.Config, pageParam *model.PageParam, toEntity any, orderBy ...string) *model.PageResult[any] {
 	return a.configRepo.GetPageList(condition, pageParam, toEntity)
 }
 
@@ -56,7 +56,7 @@ func (a *configAppImpl) GetConfig(key string) *entity.Config {
 	if err := a.configRepo.GetConfig(config, "Id", "Key", "Value"); err != nil {
 		global.Log.Warnf("不存在key = [%s] 的系统配置", key)
 	} else {
-		cache.SetStr(SysConfigKeyPrefix+key, utils.ToJsonStr(config))
+		cache.SetStr(SysConfigKeyPrefix+key, utils.ToJsonStr(config), -1)
 	}
 	return config
 }

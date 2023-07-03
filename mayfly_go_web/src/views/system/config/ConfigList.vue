@@ -1,57 +1,41 @@
 <template>
-    <div class="role-list">
-        <el-card>
-            <el-button type="primary" icon="plus" @click="editConfig(false)">添加</el-button>
-            <el-button :disabled="chooseId == null" @click="editConfig(chooseData)" type="primary" icon="edit">编辑
-            </el-button>
+    <div>
+        <page-table :show-selection="true" v-model:selection-data="selectionData" :data="configs" :columns="columns"
+            :total="total" v-model:page-size="query.pageSize" v-model:page-num="query.pageNum" @pageChange="search()">
 
-            <el-table :data="configs" @current-change="choose" ref="table" style="width: 100%">
-                <el-table-column label="选择" width="55px">
-                    <template #default="scope">
-                        <el-radio v-model="chooseId" :label="scope.row.id">
-                            <i></i>
-                        </el-radio>
-                    </template>
-                </el-table-column>
-                <el-table-column prop="name" label="配置项" min-width="100px" show-overflow-tooltip></el-table-column>
-                <el-table-column prop="key" label="配置key" min-width="100px"></el-table-column>
-                <el-table-column prop="value" label="配置值" show-overflow-tooltip></el-table-column>
-                <el-table-column prop="remark" label="备注" min-width="100px" show-overflow-tooltip></el-table-column>
-                <el-table-column prop="updateTime" label="更新时间" min-width="100px">
-                    <template #default="scope">
-                        {{ dateFormat(scope.row.updateTime) }}
-                    </template>
-                </el-table-column>
-                <el-table-column prop="modifier" label="修改者" min-width="60px" show-overflow-tooltip></el-table-column>
-                <el-table-column label="操作" min-width="50" fixed="right">
-                    <template #default="scope">
-                        <el-link :disabled="scope.row.status == -1" type="warning"
-                            @click="showSetConfigDialog(scope.row)" plain size="small" :underline="false">配置</el-link>
-                    </template>
-                </el-table-column>
-            </el-table>
-            <el-row style="margin-top: 20px" type="flex" justify="end">
-                <el-pagination style="text-align: right" @current-change="handlePageChange" :total="total"
-                    layout="prev, pager, next, total, jumper" v-model:current-page="query.pageNum"
-                    :page-size="query.pageSize"></el-pagination>
-            </el-row>
-        </el-card>
+            <template #queryRight>
+                <el-button v-auth="perms.saveConfig" type="primary" icon="plus"
+                    @click="editConfig(false)">添加</el-button>
+            </template>
+
+            <template #status="{ data }">
+                <el-tag v-if="data.status == 1" type="success">正常</el-tag>
+                <el-tag v-if="data.status == -1" type="danger">禁用</el-tag>
+            </template>
+
+            <template #action="{ data }">
+                <el-button :disabled="data.status == -1" type="warning" @click="showSetConfigDialog(data)"
+                    link>配置</el-button>
+                <el-button v-if="actionBtns[perms.saveConfig]" @click="editConfig(data)" type="primary" link>编辑
+                </el-button>
+            </template>
+        </page-table>
 
         <el-dialog :before-close="closeSetConfigDialog" title="配置项设置" v-model="paramsDialog.visible" width="500px">
-            <el-form v-if="paramsDialog.paramsFormItem.length > 0" ref="paramsForm" :model="paramsDialog.params"
-                label-width="90px">
+            <el-form v-if="paramsDialog.paramsFormItem.length > 0" ref="paramsFormRef" :model="paramsDialog.params"
+                label-width="130px">
                 <el-form-item v-for="item in paramsDialog.paramsFormItem" :key="item.name" :prop="item.model"
                     :label="item.name" required>
-                    <el-input v-if="!item.options" v-model="paramsDialog.params[item.model]"
-                        :placeholder="item.placeholder" autocomplete="off" clearable></el-input>
-                    <el-select v-else v-model="paramsDialog.params[item.model]" :placeholder="item.placeholder"
-                        filterable autocomplete="off" clearable style="width: 100%">
+                    <el-input v-if="!item.options" v-model="paramsDialog.params[item.model]" :placeholder="item.placeholder"
+                        autocomplete="off" clearable></el-input>
+                    <el-select v-else v-model="paramsDialog.params[item.model]" :placeholder="item.placeholder" filterable
+                        autocomplete="off" clearable style="width: 100%">
                         <el-option v-for="option in item.options.split(',')" :key="option" :label="option"
                             :value="option" />
                     </el-select>
                 </el-form-item>
             </el-form>
-            <el-form v-else ref="paramsForm" label-width="90px">
+            <el-form v-else ref="paramsFormRef" label-width="90px">
                 <el-form-item label="配置值" required>
                     <el-input v-model="paramsDialog.params" :placeholder="paramsDialog.config.remark" autocomplete="off"
                         clearable></el-input>
@@ -60,7 +44,7 @@
             <template #footer>
                 <span class="dialog-footer">
                     <el-button @click="closeSetConfigDialog()">取 消</el-button>
-                    <el-button type="primary" @click="setConfig()">确 定</el-button>
+                    <el-button v-auth="'config:save'" type="primary" @click="setConfig()">确 定</el-button>
                 </span>
             </template>
         </el-dialog>
@@ -71,12 +55,29 @@
 </template>
 
 <script lang="ts" setup>
-import { toRefs, reactive, onMounted } from 'vue';
+import { ref, toRefs, reactive, onMounted } from 'vue';
 import ConfigEdit from './ConfigEdit.vue';
 import { configApi } from '../api';
 import { ElMessage } from 'element-plus';
-import { dateFormat } from '@/common/utils/date';
+import PageTable from '@/components/pagetable/PageTable.vue'
+import { TableColumn } from '@/components/pagetable';
+import { hasPerms } from '@/components/auth/auth';
 
+const perms = {
+    saveConfig: "config:save"
+}
+const columns = [
+    TableColumn.new("name", "配置项"),
+    TableColumn.new("key", "配置key"),
+    TableColumn.new("value", "配置值"),
+    TableColumn.new("remark", "备注"),
+    TableColumn.new("modifier", "更新账号"),
+    TableColumn.new("updateTime", "更新时间").isTime(),
+]
+const actionColumn = TableColumn.new("action", "操作").isSlot().fixedRight().setMinWidth(130).noShowOverflowTooltip();
+const actionBtns = hasPerms([perms.saveConfig])
+
+const paramsFormRef: any = ref(null)
 const state = reactive({
     query: {
         pageNum: 1,
@@ -85,8 +86,7 @@ const state = reactive({
     },
     total: 0,
     configs: [],
-    chooseId: null,
-    chooseData: null,
+    selectionData: [],
     paramsDialog: {
         visible: false,
         config: null as any,
@@ -104,13 +104,15 @@ const {
     query,
     total,
     configs,
-    chooseId,
-    chooseData,
+    selectionData,
     paramsDialog,
     configEdit,
 } = toRefs(state)
 
 onMounted(() => {
+    if (Object.keys(actionBtns).length > 0) {
+        columns.push(actionColumn);
+    }
     search();
 });
 
@@ -118,11 +120,6 @@ const search = async () => {
     let res = await configApi.list.request(state.query);
     state.configs = res.list;
     state.total = res.total;
-};
-
-const handlePageChange = (curPage: number) => {
-    state.query.pageNum = curPage;
-    search();
 };
 
 const showSetConfigDialog = (row: any) => {
@@ -155,13 +152,25 @@ const closeSetConfigDialog = () => {
 const setConfig = async () => {
     let paramsValue = state.paramsDialog.params;
     if (state.paramsDialog.paramsFormItem.length > 0) {
-        // 如果配置项删除，则需要将value中对应的字段移除
-        for (let paramKey in paramsValue) {
-            if (!hasParam(paramKey, state.paramsDialog.paramsFormItem)) {
-                delete paramsValue[paramKey];
+        await paramsFormRef.value.validate(async (valid: boolean) => {
+            if (!valid) {
+                paramsValue = null as any;
+                return false;
             }
-        }
-        paramsValue = JSON.stringify(paramsValue);
+            if (state.paramsDialog.paramsFormItem.length > 0) {
+                // 如果配置项删除，则需要将value中对应的字段移除
+                for (let paramKey in paramsValue) {
+                    if (!hasParam(paramKey, state.paramsDialog.paramsFormItem)) {
+                        delete paramsValue[paramKey];
+                    }
+                }
+                paramsValue = JSON.stringify(paramsValue);
+            }
+        });
+    }
+    // 说明校验失败
+    if (paramsValue == null) {
+        return;
     }
     await configApi.save.request({
         id: state.paramsDialog.config.id,
@@ -172,6 +181,7 @@ const setConfig = async () => {
     ElMessage.success('保存成功');
     closeSetConfigDialog();
     search();
+
 };
 
 const hasParam = (paramKey: string, paramItems: any) => {
@@ -183,18 +193,8 @@ const hasParam = (paramKey: string, paramItems: any) => {
     return false;
 };
 
-const choose = (item: any) => {
-    if (!item) {
-        return;
-    }
-    state.chooseId = item.id;
-    state.chooseData = item;
-};
-
 const configEditChange = () => {
     ElMessage.success('保存成功');
-    state.chooseId = null;
-    state.chooseData = null;
     search();
 };
 
@@ -208,6 +208,4 @@ const editConfig = (data: any) => {
     state.configEdit.visible = true;
 };
 </script>
-<style lang="scss">
-
-</style>
+<style lang="scss"></style>

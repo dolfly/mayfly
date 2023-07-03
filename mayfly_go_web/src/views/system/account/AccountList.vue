@@ -1,78 +1,45 @@
 <template>
-    <div class="role-list">
-        <el-card>
-            <el-button v-auth="'account:add'" type="primary" icon="plus" @click="editAccount(true)">添加</el-button>
-            <el-button v-auth="'account:add'" :disabled="chooseId == null" @click="editAccount(false)" type="primary"
-                icon="edit">编辑</el-button>
-            <el-button v-auth="'account:saveRoles'" :disabled="chooseId == null" @click="showRoleEdit()" type="success"
-                icon="setting">角色分配</el-button>
-            <el-button v-auth="'account:del'" :disabled="chooseId == null" @click="deleteAccount()" type="danger"
-                icon="delete">删除</el-button>
-            <div style="float: right">
-                <el-input class="mr2" placeholder="请输入账号名" style="width: 200px" v-model="query.username"
-                    @clear="search()" clearable></el-input>
-                <el-button @click="search()" type="success" icon="search"></el-button>
-            </div>
-            <el-table :data="datas" ref="table" @current-change="choose" show-overflow-tooltip>
-                <el-table-column label="选择" width="55px">
-                    <template #default="scope">
-                        <el-radio v-model="chooseId" :label="scope.row.id">
-                            <i></i>
-                        </el-radio>
-                    </template>
-                </el-table-column>
-                <el-table-column prop="name" label="姓名" min-width="115"></el-table-column>
-                <el-table-column prop="username" label="用户名" min-width="115"></el-table-column>
+    <div>
+        <page-table ref="pageTableRef" :query="queryConfig" v-model:query-form="query" :show-selection="true"
+            v-model:selection-data="selectionData" :data="datas" :columns="columns" :total="total"
+            v-model:page-size="query.pageSize" v-model:page-num="query.pageNum" @pageChange="search()">
 
-                <el-table-column align="center" prop="status" label="状态" min-width="70">
-                    <template #default="scope">
-                        <el-tag v-if="scope.row.status == 1" type="success">正常</el-tag>
-                        <el-tag v-if="scope.row.status == -1" type="danger">禁用</el-tag>
-                    </template>
-                </el-table-column>
-                <el-table-column min-width="160" prop="lastLoginTime" label="最后登录时间" show-overflow-tooltip>
-                    <template #default="scope">
-                        {{ dateFormat(scope.row.lastLoginTime) }}
-                    </template>
-                </el-table-column>
+            <template #queryRight>
+                <el-button v-auth="perms.addAccount" type="primary" icon="plus"
+                    @click="editAccount(true)">添加</el-button>
+                <el-button v-auth="perms.delAccount" :disabled="state.selectionData.length < 1"
+                    @click="deleteAccount()" type="danger" icon="delete">删除</el-button>
+            </template>
 
-                <el-table-column min-width="115" prop="creator" label="创建账号"></el-table-column>
-                <el-table-column min-width="160" prop="createTime" label="创建时间" show-overflow-tooltip>
-                    <template #default="scope">
-                        {{ dateFormat(scope.row.createTime) }}
-                    </template>
-                </el-table-column>
-                <!-- <el-table-column min-width="115" prop="modifier" label="更新账号"></el-table-column>
-			<el-table-column min-width="160" prop="updateTime" label="修改时间">
-				<template #default="scope">
-					{{ dateFormat(scope.row.updateTime) }}
-				</template>
-			</el-table-column> -->
+            <template #status="{ data }">
+                <el-tag v-if="data.status == 1" type="success">正常</el-tag>
+                <el-tag v-if="data.status == -1" type="danger">禁用</el-tag>
+            </template>
 
-                <!-- <el-table-column min-width="120" prop="remark" label="备注" show-overflow-tooltip></el-table-column> -->
-                <el-table-column label="查看更多" min-width="150">
-                    <template #default="scope">
-                        <el-link @click.prevent="showRoles(scope.row)" type="success">角色</el-link>
+            <template #showmore="{ data }">
+                <el-link @click.prevent="showRoles(data)" type="success">角色</el-link>
 
-                        <el-link class="ml5" @click.prevent="showResources(scope.row)" type="info">菜单&权限</el-link>
-                    </template>
-                </el-table-column>
+                <el-link class="ml5" @click.prevent="showResources(data)" type="info">菜单&权限</el-link>
+            </template>
 
-                <el-table-column label="操作" min-width="200px">
-                    <template #default="scope">
-                        <el-button v-auth="'account:changeStatus'" @click="changeStatus(scope.row)"
-                            v-if="scope.row.status == 1" type="danger" icom="tickets" size="small" plain>禁用</el-button>
-                        <el-button v-auth="'account:changeStatus'" v-if="scope.row.status == -1" type="success"
-                            @click="changeStatus(scope.row)" size="small" plain>启用</el-button>
-                    </template>
-                </el-table-column>
-            </el-table>
-            <el-row style="margin-top: 20px" type="flex" justify="end">
-                <el-pagination style="text-align: right" @current-change="handlePageChange" :total="total"
-                    layout="prev, pager, next, total, jumper" v-model:current-page="query.pageNum"
-                    :page-size="query.pageSize"></el-pagination>
-            </el-row>
-        </el-card>
+            <template #action="{ data }">
+                <el-button link v-if="actionBtns[perms.addAccount]" @click="editAccount(data)"
+                    type="primary">编辑</el-button>
+
+                <el-button link v-if="actionBtns[perms.saveAccountRole]" @click="showRoleEdit(data)"
+                    type="success">角色分配</el-button>
+
+                <el-button link v-if="actionBtns[perms.changeAccountStatus] && data.status == 1"
+                    @click="changeStatus(data)" type="danger">禁用</el-button>
+
+                <el-button link v-if="actionBtns[perms.changeAccountStatus] && data.status == -1" type="success"
+                    @click="changeStatus(data)">启用</el-button>
+
+                <el-button link v-if="actionBtns[perms.addAccount]"
+                    :disabled="!data.otpSecret || data.otpSecret == '-'" @click="resetOtpSecret(data)"
+                    type="warning">重置OTP</el-button>
+            </template>
+        </page-table>
 
         <el-dialog width="500px" :title="showRoleDialog.title" v-model="showRoleDialog.visible">
             <el-table border :data="showRoleDialog.accountRoles">
@@ -93,7 +60,7 @@
                     <span class="custom-tree-node">
                         <span v-if="data.type == enums.ResourceTypeEnum['MENU'].value">{{ node.label }}</span>
                         <span v-if="data.type == enums.ResourceTypeEnum['PERMISSION'].value" style="color: #67c23a">{{
-                                node.label
+                            node.label
                         }}</span>
                     </span>
                 </template>
@@ -107,20 +74,50 @@
 </template>
 
 <script lang='ts' setup>
-import { toRefs, reactive, onMounted } from 'vue';
+import { ref, toRefs, reactive, onMounted } from 'vue';
 import RoleEdit from './RoleEdit.vue';
 import AccountEdit from './AccountEdit.vue';
 import enums from '../enums';
 import { accountApi } from '../api';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { dateFormat } from '@/common/utils/date';
+import PageTable from '@/components/pagetable/PageTable.vue'
+import { TableColumn, TableQuery } from '@/components/pagetable';
+import { hasPerms } from '@/components/auth/auth';
+
+const pageTableRef: any = ref(null)
+
+const perms = {
+    addAccount: "account:add",
+    delAccount: "account:del",
+    saveAccountRole: "account:saveRoles",
+    changeAccountStatus: "account:changeStatus",
+}
+
+const queryConfig = [
+    TableQuery.text("username", "用户名"),
+]
+const columns = [
+    TableColumn.new("name", "姓名"),
+    TableColumn.new("username", "用户名"),
+    TableColumn.new("status", "状态").isSlot(),
+    TableColumn.new("lastLoginTime", "最后登录时间").isTime(),
+    TableColumn.new("showmore", "查看更多").isSlot().setMinWidth(150),
+    TableColumn.new("creator", "创建账号"),
+    TableColumn.new("createTime", "创建时间").isTime(),
+    TableColumn.new("modifier", "更新账号"),
+    TableColumn.new("updateTime", "更新时间").isTime(),
+]
+
+// 该用户拥有的的操作列按钮权限
+const actionBtns = hasPerms([perms.addAccount, perms.saveAccountRole, perms.changeAccountStatus])
+const actionColumn = TableColumn.new("action", "操作").isSlot().fixedRight().setMinWidth(260).noShowOverflowTooltip()
 
 const state = reactive({
-    chooseId: null,
     /**
      * 选中的数据
      */
-    chooseData: null,
+    selectionData: [],
     /**
      * 查询条件
      */
@@ -157,7 +154,7 @@ const state = reactive({
 });
 
 const {
-    chooseId,
+    selectionData,
     query,
     datas,
     total,
@@ -168,21 +165,21 @@ const {
 } = toRefs(state)
 
 onMounted(() => {
+    if (Object.keys(actionBtns).length > 0) {
+        columns.push(actionColumn);
+    }
     search();
 });
 
-const choose = (item: any) => {
-    if (!item) {
-        return;
-    }
-    state.chooseId = item.id;
-    state.chooseData = item;
-};
-
 const search = async () => {
-    let res: any = await accountApi.list.request(state.query);
-    state.datas = res.list;
-    state.total = res.total;
+    try {
+        pageTableRef.value.loading(true);
+        let res: any = await accountApi.list.request(state.query);
+        state.datas = res.list;
+        state.total = res.total;
+    } finally {
+        pageTableRef.value.loading(false);
+    }
 };
 
 const showResources = async (row: any) => {
@@ -215,24 +212,25 @@ const changeStatus = async (row: any) => {
     search();
 };
 
-const handlePageChange = (curPage: number) => {
-    state.query.pageNum = curPage;
-    search();
+const resetOtpSecret = async (row: any) => {
+    let id = row.id;
+    await accountApi.resetOtpSecret.request({
+        id,
+    });
+    ElMessage.success('操作成功');
+    row.otpSecret = "-";
 };
 
-const showRoleEdit = () => {
-    if (!state.chooseId) {
-        ElMessage.error('请选择账号');
-    }
+const showRoleEdit = (data: any) => {
     state.roleDialog.visible = true;
-    state.roleDialog.account = state.chooseData;
+    state.roleDialog.account = data;
 };
 
-const editAccount = (isAdd = false) => {
-    if (isAdd) {
+const editAccount = (data: any) => {
+    if (!data) {
         state.accountDialog.data = null;
     } else {
-        state.accountDialog.data = state.chooseData;
+        state.accountDialog.data = data;
     }
     state.accountDialog.visible = true;
 };
@@ -250,19 +248,15 @@ const valChange = () => {
 
 const deleteAccount = async () => {
     try {
-        await ElMessageBox.confirm(`确定删除该账号?`, '提示', {
+        await ElMessageBox.confirm(`确定删除【${state.selectionData.map((x: any) => x.name).join(", ")}】的账号?`, '提示', {
             confirmButtonText: '确定',
             cancelButtonText: '取消',
             type: 'warning',
         });
-        await accountApi.del.request({ id: state.chooseId });
+        await accountApi.del.request({ id: state.selectionData.map((x: any) => x.id).join(",") });
         ElMessage.success('删除成功');
-        state.chooseData = null;
-        state.chooseId = null;
         search();
     } catch (err) { }
 };
 </script>
-<style lang="scss">
-
-</style>
+<style lang="scss"></style>

@@ -52,7 +52,7 @@ type DbSqlExec interface {
 	DeleteBy(condition *entity.DbSqlExec)
 
 	// 分页获取
-	GetPageList(condition *entity.DbSqlExec, pageParam *model.PageParam, toEntity any, orderBy ...string) *model.PageResult
+	GetPageList(condition *entity.DbSqlExec, pageParam *model.PageParam, toEntity any, orderBy ...string) *model.PageResult[any]
 }
 
 func newDbSqlExecApp(dbExecSqlRepo repository.DbSqlExec) DbSqlExec {
@@ -151,7 +151,7 @@ func (d *dbSqlExecAppImpl) DeleteBy(condition *entity.DbSqlExec) {
 	d.dbSqlExecRepo.DeleteBy(condition)
 }
 
-func (d *dbSqlExecAppImpl) GetPageList(condition *entity.DbSqlExec, pageParam *model.PageParam, toEntity any, orderBy ...string) *model.PageResult {
+func (d *dbSqlExecAppImpl) GetPageList(condition *entity.DbSqlExec, pageParam *model.PageParam, toEntity any, orderBy ...string) *model.PageResult[any] {
 	return d.dbSqlExecRepo.GetPageList(condition, pageParam, toEntity, orderBy...)
 }
 
@@ -193,6 +193,7 @@ func doUpdate(update *sqlparser.Update, execSqlReq *DbSqlExecReq, dbSqlExec *ent
 	// 可能使用别名，故空格切割
 	tableName := strings.Split(tableStr, " ")[0]
 	where := sqlparser.String(update.Where)
+	biz.IsTrue(len(where) > 0, "SQL[%s]未执行. 请完善 where 条件后再执行", execSqlReq.Sql)
 
 	updateExprs := update.Exprs
 	updateColumns := make([]string, 0)
@@ -227,6 +228,7 @@ func doDelete(delete *sqlparser.Delete, execSqlReq *DbSqlExecReq, dbSqlExec *ent
 	// 可能使用别名，故空格切割
 	table := strings.Split(tableStr, " ")[0]
 	where := sqlparser.String(delete.Where)
+	biz.IsTrue(len(where) > 0, "SQL[%s]未执行. 请完善 where 条件后再执行", execSqlReq.Sql)
 
 	// 查询删除数据
 	selectSql := fmt.Sprintf("SELECT * FROM %s %s LIMIT 200", tableStr, where)

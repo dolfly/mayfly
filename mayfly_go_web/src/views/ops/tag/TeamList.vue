@@ -1,47 +1,31 @@
 <template>
-    <div class="role-list">
-        <el-card>
-            <el-button v-auth="'team:save'" type="primary" icon="plus" @click="showSaveTeamDialog(false)">添加</el-button>
-            <el-button v-auth="'team:del'" :disabled="!chooseId" @click="deleteTeam(chooseData)" type="danger"
-                icon="delete">删除</el-button>
+    <div>
+        <page-table :query="state.queryConfig" v-model:query-form="query" :show-selection="true"
+            v-model:selection-data="selectionData" :data="data" :columns="state.columns" :total="total"
+            v-model:page-size="query.pageSize" v-model:page-num="query.pageNum" @pageChange="search()">
 
-            <div style="float: right">
-                <el-input placeholder="请输入团队名称" class="mr2" style="width: 200px" v-model="query.name" @clear="search"
-                    clearable></el-input>
-                <el-button @click="search" type="success" icon="search"></el-button>
-            </div>
-            <el-table :data="data" @current-change="choose" ref="table" style="width: 100%">
-                <el-table-column label="选择" width="55px">
-                    <template #default="scope">
-                        <el-radio v-model="chooseId" :label="scope.row.id">
-                            <i></i>
-                        </el-radio>
-                    </template>
-                </el-table-column>
-                <el-table-column prop="name" label="团队名称"></el-table-column>
-                <el-table-column prop="remark" label="备注" min-width="160px" show-overflow-tooltip></el-table-column>
-                <el-table-column prop="createTime" label="创建时间">
-                    <template #default="scope">
-                        {{ dateFormat(scope.row.createTime) }}
-                    </template>
-                </el-table-column>
-                <el-table-column prop="creator" label="创建者"> </el-table-column>
-                <el-table-column label="操作" min-width="80px">
-                    <template #default="scope">
-                        <el-link @click.prevent="showMembers(scope.row)" :underline="false" type="primary">成员</el-link>
-                        <el-divider direction="vertical" border-style="dashed" />
-                        <el-link @click.prevent="showTags(scope.row)" :underline="false" type="success">标签</el-link>
-                        <el-divider v-auth="'team:save'" direction="vertical" border-style="dashed" />
-                        <el-link v-auth="'team:save'" @click.prevent="showSaveTeamDialog(scope.row)" :underline="false" type="warning">编辑</el-link>
-                    </template>
-                </el-table-column>
-            </el-table>
-            <el-row style="margin-top: 20px" type="flex" justify="end">
-                <el-pagination style="text-align: right" @current-change="handlePageChange" :total="total"
-                    layout="prev, pager, next, total, jumper" v-model:current-page="query.pageNum"
-                    :page-size="query.pageSize"></el-pagination>
-            </el-row>
-        </el-card>
+            <template #queryRight>
+                <el-button v-auth="'team:save'" type="primary" icon="plus" @click="showSaveTeamDialog(false)">添加</el-button>
+                <el-button v-auth="'team:del'" :disabled="selectionData.length < 1" @click="deleteTeam()" type="danger"
+                    icon="delete">删除</el-button>
+
+            </template>
+
+            <template #tagPath="{ data }">
+                <tag-info :tag-path="data.tagPath" />
+                <span class="ml5">
+                    {{ data.tagPath }}
+                </span>
+            </template>
+
+            <template #action="{ data }">
+                <el-button @click.prevent="showMembers(data)" link type="primary">成员</el-button>
+
+                <el-button @click.prevent="showTags(data)" link type="success">标签</el-button>
+
+                <el-button v-auth="'team:save'" @click.prevent="showSaveTeamDialog(data)" link type="warning">编辑</el-button>
+            </template>
+        </page-table>
 
         <el-dialog width="400px" title="团队编辑" :before-close="cancelSaveTeam" v-model="addTeamDialog.visible">
             <el-form ref="teamForm" :model="addTeamDialog.form" label-width="70px">
@@ -66,8 +50,8 @@
                 <el-form-item prop="tag" label="标签:">
                     <el-tree-select ref="tagTreeRef" style="width: 100%" v-model="showTagDialog.tagTreeTeams"
                         :data="showTagDialog.tags" :default-expanded-keys="showTagDialog.tagTreeTeams" multiple
-                        :render-after-expand="true" show-checkbox check-strictly node-key="id"
-                        :props="showTagDialog.props" @check="tagTreeNodeCheck">
+                        :render-after-expand="true" show-checkbox check-strictly node-key="id" :props="showTagDialog.props"
+                        @check="tagTreeNodeCheck">
                         <template #default="{ data }">
                             <span class="custom-tree-node">
                                 <span style="font-size: 13px">
@@ -98,8 +82,8 @@
                 <el-button v-auth="'team:member:del'" @click="deleteMember" :disabled="showMemDialog.chooseId == null"
                     type="danger" icon="delete" size="small">移除</el-button>
                 <div style="float: right">
-                    <el-input placeholder="请输入用户名" class="mr2" style="width: 150px"
-                        v-model="showMemDialog.query.username" size="small" @clear="search" clearable></el-input>
+                    <el-input placeholder="请输入用户名" class="mr2" style="width: 150px" v-model="showMemDialog.query.username"
+                        size="small" @clear="search" clearable></el-input>
                     <el-button @click="setMemebers" type="success" icon="search" size="small"></el-button>
                 </div>
             </div>
@@ -153,6 +137,8 @@ import { accountApi } from '../../system/api';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { dateFormat } from '@/common/utils/date';
 import { notBlank } from '@/common/assert';
+import PageTable from '@/components/pagetable/PageTable.vue'
+import { TableColumn, TableQuery } from '@/components/pagetable';
 
 const teamForm: any = ref(null);
 const tagTreeRef: any = ref(null);
@@ -168,10 +154,19 @@ const state = reactive({
         pageSize: 10,
         name: null,
     },
+    queryConfig: [
+        TableQuery.text("name", "团队名称"),
+    ],
+    columns: [
+        TableColumn.new("name", "团队名称"),
+        TableColumn.new("remark", "备注"),
+        TableColumn.new("createTime", "创建时间").isTime(),
+        TableColumn.new("creator", "创建人"),
+        TableColumn.new("action", "操作").isSlot().setMinWidth(100).fixedRight(),
+    ],
     total: 0,
     data: [],
-    chooseId: 0,
-    chooseData: null,
+    selectionData: [],
     showMemDialog: {
         visible: false,
         chooseId: 0,
@@ -213,8 +208,7 @@ const {
     addTeamDialog,
     total,
     data,
-    chooseId,
-    chooseData,
+    selectionData,
     showMemDialog,
     showTagDialog,
 } = toRefs(state)
@@ -227,19 +221,6 @@ const search = async () => {
     let res = await tagApi.getTeams.request(state.query);
     state.data = res.list;
     state.total = res.total;
-};
-
-const handlePageChange = (curPage: number) => {
-    state.query.pageNum = curPage;
-    search();
-};
-
-const choose = (item: any) => {
-    if (!item) {
-        return;
-    }
-    state.chooseId = item.id;
-    state.chooseData = item;
 };
 
 const showSaveTeamDialog = (data: any) => {
@@ -270,13 +251,13 @@ const cancelSaveTeam = () => {
     teamForm.value.resetFields();
 };
 
-const deleteTeam = (data: any) => {
-    ElMessageBox.confirm(`此操作将删除 [${data.name}], 是否继续?`, '提示', {
+const deleteTeam = () => {
+    ElMessageBox.confirm(`此操作将删除【${state.selectionData.map((x: any) => x.name).join(", ")}】团队信息, 是否继续?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning',
     }).then(async () => {
-        await tagApi.delTeam.request({ id: data.id });
+        await tagApi.delTeam.request({ id: state.selectionData.map((x: any) => x.id).join(",") });
         ElMessage.success('删除成功！');
         search();
     });
@@ -332,7 +313,7 @@ const showAddMemberDialog = () => {
 
 const addMember = async () => {
     const memForm = state.showMemDialog.memForm;
-    memForm.teamId = state.chooseId;
+    memForm.teamId = (state.selectionData[0] as any).id;
     notBlank(memForm.accountIds, '请先选择账号');
 
     await tagApi.saveTeamMem.request(memForm);
@@ -404,6 +385,4 @@ const tagTreeNodeCheck = () => {
         //     console.log(state.showTagDialog.tagTreeTeams);
         // }
 </script>
-<style lang="scss">
-
-</style>
+<style lang="scss"></style>

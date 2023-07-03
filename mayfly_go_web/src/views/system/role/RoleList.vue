@@ -1,52 +1,31 @@
 <template>
-    <div class="role-list">
-        <el-card>
-            <el-button v-auth="'role:add'" type="primary" icon="plus" @click="editRole(false)">添加</el-button>
-            <el-button v-auth="'role:update'" :disabled="chooseId == null" @click="editRole(chooseData)" type="primary"
-                icon="edit">编辑</el-button>
-            <el-button v-auth="'role:saveResources'" :disabled="chooseId == null" @click="editResource(chooseData)"
-                type="success" icon="setting">分配菜单&权限</el-button>
-            <el-button v-auth="'role:del'" :disabled="chooseId == null" @click="deleteRole(chooseData)" type="danger"
-                icon="delete">删除</el-button>
+    <div>
+        <page-table ref="pageTableRef" :query="queryConfig" v-model:query-form="query" :show-selection="true"
+            v-model:selection-data="selectionData" :data="roles" :columns="columns" :total="total"
+            v-model:page-size="query.pageSize" v-model:page-num="query.pageNum" @pageChange="search()">
 
-            <div style="float: right">
-                <el-input placeholder="请输入角色名称" class="mr2" style="width: 200px" v-model="query.name" @clear="search"
-                    clearable></el-input>
-                <el-button @click="search" type="success" icon="search"></el-button>
-            </div>
-            <el-table :data="roles" @current-change="choose" ref="table" style="width: 100%">
-                <el-table-column label="选择" width="55px">
-                    <template #default="scope">
-                        <el-radio v-model="chooseId" :label="scope.row.id">
-                            <i></i>
-                        </el-radio>
-                    </template>
-                </el-table-column>
-                <el-table-column prop="name" label="角色名称"></el-table-column>
-                <el-table-column prop="code" label="角色code"></el-table-column>
-                <el-table-column prop="remark" label="描述" min-width="160px" show-overflow-tooltip></el-table-column>
-                <el-table-column prop="createTime" label="创建时间">
-                    <template #default="scope">
-                        {{ dateFormat(scope.row.createTime) }}
-                    </template>
-                </el-table-column>
-                <el-table-column prop="updateTime" label="修改时间">
-                    <template #default="scope">
-                        {{ dateFormat(scope.row.updateTime) }}
-                    </template>
-                </el-table-column>
-                <el-table-column label="查看更多" min-width="80px">
-                    <template #default="scope">
-                        <el-link @click.prevent="showResources(scope.row)" type="info">菜单&权限</el-link>
-                    </template>
-                </el-table-column>
-            </el-table>
-            <el-row style="margin-top: 20px" type="flex" justify="end">
-                <el-pagination style="text-align: right" @current-change="handlePageChange" :total="total"
-                    layout="prev, pager, next, total, jumper" v-model:current-page="query.pageNum"
-                    :page-size="query.pageSize"></el-pagination>
-            </el-row>
-        </el-card>
+            <template #queryRight>
+                <el-button v-auth="perms.addRole" type="primary" icon="plus" @click="editRole(false)">添加</el-button>
+                <el-button v-auth="perms.delRole" :disabled="selectionData.length < 1" @click="deleteRole(selectionData)"
+                    type="danger" icon="delete">删除</el-button>
+            </template>
+
+            <template #status="{ data }">
+                <el-tag v-if="data.status == 1" type="success" size="small">正常</el-tag>
+                <el-tag v-if="data.status == -1" type="danger" size="small">禁用</el-tag>
+            </template>
+
+            <template #showmore="{ data }">
+                <el-link @click.prevent="showResources(data)" type="info">菜单&权限</el-link>
+            </template>
+
+            <template #action="{ data }">
+                <el-button v-if="actionBtns[perms.updateRole]" @click="editRole(data)" type="primary" link>编辑</el-button>
+                <el-button v-if="actionBtns[perms.saveRoleResource]" @click="editResource(data)" type="success"
+                    link>权限分配</el-button>
+            </template>
+
+        </page-table>
 
         <role-edit :title="roleEditDialog.title" v-model:visible="roleEditDialog.visible" :data="roleEditDialog.role"
             @val-change="roleEditChange" />
@@ -59,13 +38,42 @@
 </template>
 
 <script lang="ts" setup>
-import { toRefs, reactive, onMounted } from 'vue';
+import { ref, toRefs, reactive, onMounted } from 'vue';
 import RoleEdit from './RoleEdit.vue';
 import ResourceEdit from './ResourceEdit.vue';
 import ShowResource from './ShowResource.vue';
 import { roleApi, resourceApi } from '../api';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { dateFormat } from '@/common/utils/date';
+import PageTable from '@/components/pagetable/PageTable.vue'
+import { TableColumn, TableQuery } from '@/components/pagetable';
+import { hasPerms } from '@/components/auth/auth';
+
+const pageTableRef: any = ref(null)
+
+const perms = {
+    addRole: "role:add",
+    delRole: "role:del",
+    updateRole: "role:update",
+    saveRoleResource: "role:saveResources",
+}
+
+const queryConfig = [
+    TableQuery.text("name", "角色名"),
+]
+const columns = [
+    TableColumn.new("name", "角色名称"),
+    TableColumn.new("code", "角色code"),
+    TableColumn.new("remark", "备注"),
+    TableColumn.new("status", "状态").isSlot(),
+    TableColumn.new("creator", "创建账号"),
+    TableColumn.new("createTime", "创建时间").isTime(),
+    TableColumn.new("modifier", "更新账号"),
+    TableColumn.new("updateTime", "更新时间").isTime(),
+    TableColumn.new("showmore", "查看更多").isSlot().setMinWidth(150),
+]
+
+const actionBtns = hasPerms([perms.updateRole, perms.saveRoleResource])
+const actionColumn = TableColumn.new("action", "操作").isSlot().setMinWidth(160).fixedRight()
 
 const state = reactive({
     query: {
@@ -75,8 +83,7 @@ const state = reactive({
     },
     total: 0,
     roles: [],
-    chooseId: null,
-    chooseData: null,
+    selectionData: [],
     resourceDialog: {
         visible: false,
         role: {},
@@ -99,40 +106,32 @@ const {
     query,
     total,
     roles,
-    chooseId,
-    chooseData,
+    selectionData,
     resourceDialog,
     roleEditDialog,
     showResourceDialog,
 } = toRefs(state)
 
 onMounted(() => {
+    if (Object.keys(actionBtns).length > 0) {
+        columns.push(actionColumn);
+    }
     search();
 });
 
 const search = async () => {
-    let res = await roleApi.list.request(state.query);
-    state.roles = res.list;
-    state.total = res.total;
-};
-
-const handlePageChange = (curPage: number) => {
-    state.query.pageNum = curPage;
-    search();
-};
-
-const choose = (item: any) => {
-    if (!item) {
-        return;
+    try {
+        pageTableRef.value.loading(true);
+        let res = await roleApi.list.request(state.query);
+        state.roles = res.list;
+        state.total = res.total;
+    } finally {
+        pageTableRef.value.loading(false);
     }
-    state.chooseId = item.id;
-    state.chooseData = item;
 };
 
 const roleEditChange = () => {
     ElMessage.success('修改成功！');
-    state.chooseId = null;
-    state.chooseData = null;
     search();
 };
 
@@ -149,7 +148,7 @@ const editRole = (data: any) => {
 const deleteRole = async (data: any) => {
     try {
         await ElMessageBox.confirm(
-            `此操作将删除 [${data.name}] 该角色，以及与该角色有关的账号角色关联信息和资源角色关联信息, 是否继续?`,
+            `此操作将删除【${data.map((x: any) => x.name).join(", ")}】该角色，以及与该角色有关的账号角色关联信息和资源角色关联信息, 是否继续?`,
             '提示',
             {
                 confirmButtonText: '确定',
@@ -158,7 +157,7 @@ const deleteRole = async (data: any) => {
             }
         );
         await roleApi.del.request({
-            id: data.id,
+            id: data.map((x: any) => x.id).join(","),
         });
         ElMessage.success('删除成功！');
         search();
@@ -230,6 +229,4 @@ const cancelEditResources = () => {
     }, 10);
 };
 </script>
-<style lang="scss">
-
-</style>
+<style lang="scss"></style>

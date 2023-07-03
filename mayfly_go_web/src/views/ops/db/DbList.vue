@@ -1,85 +1,62 @@
 <template>
     <div class="db-list">
-        <el-card>
-            <el-button v-auth="permissions.saveDb" type="primary" icon="plus" @click="editDb(true)">添加</el-button>
-            <el-button v-auth="permissions.saveDb" :disabled="chooseId == null" @click="editDb(false)" type="primary"
-                icon="edit">编辑</el-button>
-            <el-button v-auth="permissions.delDb" :disabled="chooseId == null" @click="deleteDb(chooseId)" type="danger"
-                icon="delete">删除</el-button>
-            <div style="float: right">
-                <el-select @focus="getTags" v-model="query.tagPath" placeholder="请选择标签" filterable clearable>
+        <page-table ref="pageTableRef" :query="queryConfig" v-model:query-form="query" :show-selection="true"
+            v-model:selection-data="state.selectionData" :data="datas" :columns="columns" :total="total"
+            v-model:page-size="query.pageSize" v-model:page-num="query.pageNum" @pageChange="search()">
+
+            <template #tagPathSelect>
+                <el-select @focus="getTags" v-model="query.tagPath" placeholder="请选择标签" @clear="search" filterable clearable
+                    style="width: 200px">
                     <el-option v-for="item in tags" :key="item" :label="item" :value="item"> </el-option>
                 </el-select>
-                <el-button type="success" icon="search" @click="search()" class="ml5"></el-button>
-            </div>
-            <el-table :data="datas" ref="table" @current-change="choose" show-overflow-tooltip stripe>
-                <el-table-column label="选择" width="60px">
-                    <template #default="scope">
-                        <el-radio v-model="chooseId" :label="scope.row.id">
-                            <i></i>
-                        </el-radio>
-                    </template>
-                </el-table-column>
-                <el-table-column prop="tagPath" label="标签路径" min-width="150" show-overflow-tooltip>
-                    <template #default="scope">
-                        <tag-info :tag-path="scope.row.tagPath" />
-                        <span class="ml5">
-                            {{ scope.row.tagPath }}
-                        </span>
-                    </template>
-                </el-table-column>
-                <el-table-column prop="name" label="名称" min-width="160" show-overflow-tooltip></el-table-column>
-                <el-table-column min-width="170" label="host:port" show-overflow-tooltip>
-                    <template #default="scope">
-                        {{ `${scope.row.host}:${scope.row.port}` }}
-                    </template>
-                </el-table-column>
-                <el-table-column prop="type" label="类型" min-width="90"></el-table-column>
-                <el-table-column prop="database" label="数据库" min-width="80">
-                    <template #default="scope">
-                        <el-popover placement="right" trigger="click" :width="300">
-                            <template #reference>
-                                <el-link type="primary" :underline="false" plain @click="selectDb(scope.row.dbs)">查看
-                                </el-link>
-                            </template>
-                            <el-input v-model="filterDb.param" @keyup="filterSchema" class="w-50 m-2" placeholder="搜索"
-                                size="small">
-                                <template #prefix>
-                                    <el-icon class="el-input__icon">
-                                        <search-icon />
-                                    </el-icon>
-                                </template>
-                            </el-input>
-                            <div class="el-tag--plain el-tag--success" v-for="db in filterDb.list" :key="db"
-                                style="border:1px var(--color-success-light-3) solid; margin-top: 3px;border-radius: 5px; padding: 2px;position: relative">
-                                <el-link type="success" plain size="small" :underline="false">{{ db }}</el-link>
-                                <el-link type="primary" plain size="small" :underline="false"
-                                    @click="showTableInfo(scope.row, db)" style="position: absolute; right: 4px">操作
-                                </el-link>
-                            </div>
-                        </el-popover>
-                    </template>
-                </el-table-column>
-                <el-table-column prop="username" label="用户名" min-width="100"></el-table-column>
-                <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip></el-table-column>
+            </template>
 
-                <el-table-column label="操作" min-width="160" fixed="right">
-                    <template #default="scope">
-                        <el-link plain size="small" :underline="false" @click="showInfo(scope.row)">
-                            详情</el-link>
-                        <el-divider direction="vertical" border-style="dashed" />
-                        <el-link class="ml5" type="primary" plain size="small" :underline="false"
-                            @click="onShowSqlExec(scope.row)">
-                            SQL执行记录</el-link>
+            <template #queryRight>
+                <el-button v-auth="perms.saveDb" type="primary" icon="plus" @click="editDb(true)">添加</el-button>
+                <el-button v-auth="perms.delDb" :disabled="selectionData.length < 1" @click="deleteDb()" type="danger"
+                    icon="delete">删除</el-button>
+            </template>
+
+            <template #tagPath="{ data }">
+                <tag-info :tag-path="data.tagPath" />
+                <span class="ml5">
+                    {{ data.tagPath }}
+                </span>
+            </template>
+
+            <template #database="{ data }">
+                <el-popover placement="right" trigger="click" :width="300">
+                    <template #reference>
+                        <el-link type="primary" :underline="false" plain @click="selectDb(data.dbs)">查看
+                        </el-link>
                     </template>
-                </el-table-column>
-            </el-table>
-            <el-row style="margin-top: 20px" type="flex" justify="end">
-                <el-pagination style="text-align: right" @current-change="handlePageChange" :total="total"
-                    layout="prev, pager, next, total, jumper" v-model:current-page="query.pageNum"
-                    :page-size="query.pageSize"></el-pagination>
-            </el-row>
-        </el-card>
+                    <el-input v-model="filterDb.param" @keyup="filterSchema" class="w-50 m-2" placeholder="搜索" size="small">
+                        <template #prefix>
+                            <el-icon class="el-input__icon">
+                                <search-icon />
+                            </el-icon>
+                        </template>
+                    </el-input>
+                    <div class="el-tag--plain el-tag--success" v-for="db in filterDb.list" :key="db"
+                        style="border:1px var(--color-success-light-3) solid; margin-top: 3px;border-radius: 5px; padding: 2px;position: relative">
+                        <el-link type="success" plain size="small" :underline="false">{{ db }}</el-link>
+                        <el-link type="primary" plain size="small" :underline="false" @click="showTableInfo(data, db)"
+                            style="position: absolute; right: 4px">操作
+                        </el-link>
+                    </div>
+                </el-popover>
+            </template>
+
+            <template #more="{ data }">
+                <el-button @click="showInfo(data)" link>详情</el-button>
+
+                <el-button class="ml5" type="primary" @click="onShowSqlExec(data)" link>SQL执行记录</el-button>
+            </template>
+
+            <template #action="{ data }">
+                <el-button v-if="actionBtns[perms.saveDb]" @click="editDb(data)" type="primary" link>编辑</el-button>
+            </template>
+        </page-table>
 
         <el-dialog width="80%" :title="`${db} 表信息`" :before-close="closeTableInfo" v-model="tableInfoDialog.visible">
             <el-row class="mb10">
@@ -147,8 +124,7 @@
                     <template #default="scope">
                         <el-link @click.prevent="showColumns(scope.row)" type="primary">字段</el-link>
                         <el-link class="ml5" @click.prevent="showTableIndex(scope.row)" type="success">索引</el-link>
-                        <el-link class="ml5"
-                            v-if="tableCreateDialog.enableEditTypes.indexOf(tableCreateDialog.type) > -1"
+                        <el-link class="ml5" v-if="tableCreateDialog.enableEditTypes.indexOf(tableCreateDialog.type) > -1"
                             @click.prevent="openEditTable(scope.row)" type="warning">编辑表</el-link>
                         <el-link class="ml5" @click.prevent="showCreateDdl(scope.row)" type="info">DDL</el-link>
                     </template>
@@ -218,8 +194,8 @@
         </el-dialog>
 
         <el-dialog width="55%" :title="`还原SQL`" v-model="rollbackSqlDialog.visible">
-            <el-input type="textarea" :autosize="{ minRows: 15, maxRows: 30 }" v-model="rollbackSqlDialog.sql"
-                size="small"> </el-input>
+            <el-input type="textarea" :autosize="{ minRows: 15, maxRows: 30 }" v-model="rollbackSqlDialog.sql" size="small">
+            </el-input>
         </el-dialog>
 
         <el-dialog width="40%" :title="`${chooseTableName} 字段信息`" v-model="columnDialog.visible">
@@ -286,7 +262,7 @@
 </template>
 
 <script lang='ts' setup>
-import { toRefs, reactive, computed, onMounted, defineAsyncComponent } from 'vue';
+import { ref, toRefs, reactive, computed, onMounted, defineAsyncComponent } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { formatByteSize } from '@/common/utils/format';
 import { dbApi } from './api';
@@ -299,25 +275,48 @@ import { Search as SearchIcon } from '@element-plus/icons-vue'
 import { tagApi } from '../tag/api';
 import { dateFormat } from '@/common/utils/date';
 import TagInfo from '../component/TagInfo.vue';
+import PageTable from '@/components/pagetable/PageTable.vue'
+import { TableColumn, TableQuery } from '@/components/pagetable';
+import { hasPerms } from '@/components/auth/auth';
 
 const DbEdit = defineAsyncComponent(() => import('./DbEdit.vue'));
 const CreateTable = defineAsyncComponent(() => import('./CreateTable.vue'));
 
-const permissions = {
+const perms = {
     saveDb: 'db:save',
     delDb: 'db:del',
 }
+
+const queryConfig = [
+    TableQuery.slot("tagPath", "标签", "tagPathSelect"),
+]
+
+const columns = [
+    TableColumn.new("tagPath", "标签路径").isSlot().setAddWidth(20),
+    TableColumn.new("name", "名称"),
+    TableColumn.new("host", "host:port").setFormatFunc((data: any, _prop: string) => `${data.host}:${data.port}`),
+    TableColumn.new("type", "类型"),
+    TableColumn.new("database", "数据库").isSlot().setMinWidth(70),
+    TableColumn.new("username", "用户名"),
+    TableColumn.new("remark", "备注"),
+    TableColumn.new("more", "更多").isSlot().setMinWidth(165).fixedRight(),
+]
+
+// 该用户拥有的的操作列按钮权限
+const actionBtns = hasPerms([perms.saveDb,])
+const actionColumn = TableColumn.new("action", "操作").isSlot().setMinWidth(65).fixedRight();
+
+const pageTableRef: any = ref(null)
 
 const state = reactive({
     row: {},
     dbId: 0,
     db: '',
     tags: [],
-    chooseId: null as any,
     /**
      * 选中的数据
      */
-    chooseData: null,
+    selectionData: [],
     /**
      * 查询条件
      */
@@ -408,7 +407,7 @@ const {
     dbId,
     db,
     tags,
-    chooseId,
+    selectionData,
     query,
     datas,
     total,
@@ -429,6 +428,9 @@ const {
 
 
 onMounted(async () => {
+    if (Object.keys(actionBtns).length > 0) {
+        columns.push(actionColumn);
+    }
     search();
 });
 
@@ -452,28 +454,20 @@ const filterTableInfos = computed(() => {
     });
 });
 
-const choose = (item: any) => {
-    if (!item) {
-        return;
-    }
-    state.chooseId = item.id;
-    state.chooseData = item;
-};
-
 const search = async () => {
-    let res: any = await dbApi.dbs.request(state.query);
-    // 切割数据库
-    res.list.forEach((e: any) => {
-        e.popoverSelectDbVisible = false;
-        e.dbs = e.database.split(' ');
-    });
-    state.datas = res.list;
-    state.total = res.total;
-};
-
-const handlePageChange = (curPage: number) => {
-    state.query.pageNum = curPage;
-    search();
+    try {
+        pageTableRef.value.loading(true);
+        let res: any = await dbApi.dbs.request(state.query);
+        // 切割数据库
+        res.list.forEach((e: any) => {
+            e.popoverSelectDbVisible = false;
+            e.dbs = e.database.split(' ');
+        });
+        state.datas = res.list;
+        state.total = res.total;
+    } finally {
+        pageTableRef.value.loading(false);
+    }
 };
 
 const showInfo = (info: any) => {
@@ -485,34 +479,30 @@ const getTags = async () => {
     state.tags = await tagApi.getAccountTags.request(null);
 };
 
-const editDb = async (isAdd = false) => {
-    if (isAdd) {
+const editDb = async (data: any) => {
+    if (!data) {
         state.dbEditDialog.data = null;
         state.dbEditDialog.title = '新增数据库资源';
     } else {
-        state.dbEditDialog.data = state.chooseData;
+        state.dbEditDialog.data = data;
         state.dbEditDialog.title = '修改数据库资源';
     }
     state.dbEditDialog.visible = true;
 };
 
 const valChange = () => {
-    state.chooseData = null;
-    state.chooseId = null;
     search();
 };
 
-const deleteDb = async (id: number) => {
+const deleteDb = async () => {
     try {
-        await ElMessageBox.confirm(`确定删除该库?`, '提示', {
+        await ElMessageBox.confirm(`确定删除【${state.selectionData.map((x: any) => x.name).join(", ")}】库?`, '提示', {
             confirmButtonText: '确定',
             cancelButtonText: '取消',
             type: 'warning',
         });
-        await dbApi.deleteDb.request({ id });
+        await dbApi.deleteDb.request({ id: state.selectionData.map((x: any) => x.id).join(",") });
         ElMessage.success('删除成功');
-        state.chooseData = null;
-        state.chooseId = null;
         search();
     } catch (err) { }
 };
@@ -651,7 +641,7 @@ const closeTableInfo = () => {
 const showColumns = async (row: any) => {
     state.chooseTableName = row.tableName;
     state.columnDialog.columns = await dbApi.columnMetadata.request({
-        id: state.chooseId,
+        id: state.dbId,
         db: state.db,
         tableName: row.tableName,
     });
@@ -662,7 +652,7 @@ const showColumns = async (row: any) => {
 const showTableIndex = async (row: any) => {
     state.chooseTableName = row.tableName;
     state.indexDialog.indexs = await dbApi.tableIndex.request({
-        id: state.chooseId,
+        id: state.dbId,
         db: state.db,
         tableName: row.tableName,
     });
@@ -673,7 +663,7 @@ const showTableIndex = async (row: any) => {
 const showCreateDdl = async (row: any) => {
     state.chooseTableName = row.tableName;
     const res = await dbApi.tableDdl.request({
-        id: state.chooseId,
+        id: state.dbId,
         db: state.db,
         tableName: row.tableName,
     });
@@ -694,10 +684,10 @@ const dropTable = async (row: any) => {
         });
         SqlExecBox({
             sql: `DROP TABLE ${tableName}`,
-            dbId: state.chooseId,
+            dbId: state.dbId,
             db: state.db,
             runSuccessCallback: async () => {
-                state.tableInfoDialog.infos = await dbApi.tableInfos.request({ id: state.chooseId, db: state.db });
+                state.tableInfoDialog.infos = await dbApi.tableInfos.request({ id: state.dbId, db: state.db });
             },
         });
     } catch (err) { }
@@ -733,12 +723,12 @@ const openEditTable = async (row: any) => {
     if (row.tableName) {
         state.tableCreateDialog.title = '修改表'
         let indexs = await dbApi.tableIndex.request({
-            id: state.chooseId,
+            id: state.dbId,
             db: state.db,
             tableName: row.tableName,
         });
         let columns = await dbApi.columnMetadata.request({
-            id: state.chooseId,
+            id: state.dbId,
             db: state.db,
             tableName: row.tableName,
         });
@@ -746,6 +736,4 @@ const openEditTable = async (row: any) => {
     }
 }
 </script>
-<style lang="scss">
-
-</style>
+<style lang="scss"></style>

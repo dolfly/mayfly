@@ -494,7 +494,8 @@ const registerSqlCompletionItemProvider = () => {
             const lastToken = tokens[tokens.length - 1].toLowerCase()
             const secondToken = tokens.length > 2 && tokens[tokens.length - 2].toLowerCase() || ''
 
-            const dbs = nowTab.params?.dbs?.split(' ') || [];
+            // const dbs = nowTab.params?.dbs?.split(' ') || [];
+            const dbs = nowTab.params && nowTab.params.dbs && nowTab.params.dbs.split(' ') || [];
             // console.log("光标前文本：=>" + textBeforePointerMulti)
             // console.log("最后输入的：=>" + lastToken)
 
@@ -516,7 +517,7 @@ const registerSqlCompletionItemProvider = () => {
                         },
                         kind: monaco.languages.CompletionItemKind.Property,
                         detail: '', // 不显示detail, 否则选中时备注等会被遮挡
-                        insertText: fieldName + ' ', // create_time
+                        insertText: fieldName, // create_time
                         range,
                         sortText: 100 + index + '' // 使用表字段声明顺序排序,排序需为字符串类型
                     });
@@ -565,7 +566,7 @@ const registerSqlCompletionItemProvider = () => {
                 return { suggestions: [] }
             } else {
                 // 如果sql里含有表名，则提示表字段
-                let mat = textBeforePointerMulti.match(/from\n*\s+\n*(\w+)\n*\s+\n*/i)
+                let mat = textBeforePointerMulti.match(/[from|update]\n*\s+\n*(\w+)\n*\s+\n*/i)
                 if (mat && mat.length > 1) {
                     let tableName = mat[1]
                     // 取出表名并提示

@@ -10,6 +10,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/mojocn/base64Captcha v1.3.5 // 验证码
 	github.com/pkg/sftp v1.13.5
+	github.com/pquerna/otp v1.4.0
 	github.com/redis/go-redis/v9 v9.0.5
 	github.com/robfig/cron/v3 v3.0.1 // 定时任务
 	github.com/sirupsen/logrus v1.9.3
@@ -18,11 +19,12 @@ require (
 	golang.org/x/crypto v0.10.0 // ssh
 	gopkg.in/yaml.v3 v3.0.1
 	// gorm
-	gorm.io/driver/mysql v1.5.0
-	gorm.io/gorm v1.25.1
+	gorm.io/driver/mysql v1.5.1
+	gorm.io/gorm v1.25.2
 )
 
 require (
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect

@@ -287,6 +287,7 @@ CREATE TABLE `t_sys_account` (
   `username` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `password` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `status` tinyint(4) DEFAULT NULL,
+  `otp_secret` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'otp秘钥',
   `last_login_time` datetime DEFAULT NULL COMMENT '最后登录时间',
   `last_login_ip` varchar(24) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `create_time` datetime NOT NULL,
@@ -302,7 +303,7 @@ CREATE TABLE `t_sys_account` (
 -- Records of t_sys_account
 -- ----------------------------
 BEGIN;
-INSERT INTO `t_sys_account` VALUES (1, "管理员", 'admin', '$2a$10$w3Wky2U.tinvR7c/s0aKPuwZsIu6pM1/DMJalwBDMbE6niHIxVrrm', 1, '2022-10-26 20:03:48', '::1', '2020-01-01 19:00:00', 1, 'admin', '2020-01-01 19:00:00', 1, 'admin');
+INSERT INTO `t_sys_account` VALUES (1, "管理员", 'admin', '$2a$10$w3Wky2U.tinvR7c/s0aKPuwZsIu6pM1/DMJalwBDMbE6niHIxVrrm', 1, '', '2022-10-26 20:03:48', '::1', '2020-01-01 19:00:00', 1, 'admin', '2020-01-01 19:00:00', 1, 'admin');
 COMMIT;
 
 -- ----------------------------
@@ -350,10 +351,10 @@ CREATE TABLE `t_sys_config` (
 -- Records of t_sys_config
 -- ----------------------------
 BEGIN;
-INSERT INTO `t_sys_config` VALUES (1, '是否启用登录验证码', 'UseLoginCaptcha', NULL, '1', '1: 启用、0: 不启用', '2022-08-25 22:27:17', 1, 'admin', '2022-08-26 10:26:56', 1, 'admin');
-INSERT INTO `t_sys_config` VALUES (2, '是否启用水印', 'UseWartermark', NULL, '1', '1: 启用、0: 不启用', '2022-08-25 23:36:35', 1, 'admin', '2022-08-26 10:02:52', 1, 'admin');
-INSERT INTO `t_sys_config` VALUES (3, '数据库查询最大结果集', 'DbQueryMaxCount', '[]', '200', '允许sql查询的最大结果集数。注: 0=不限制', '2023-02-11 14:29:03', 1, 'admin', '2023-02-11 14:40:56', 1, 'admin');
-INSERT INTO `t_sys_config` VALUES (4, '数据库是否记录查询SQL', 'DbSaveQuerySQL', '[]', '0', '1: 记录、0:不记录', '2023-02-11 16:07:14', 1, 'admin', '2023-02-11 16:44:17', 1, 'admin');
+INSERT INTO `t_sys_config` (name, `key`, params, value, remark, create_time, creator_id, creator, update_time, modifier_id, modifier) VALUES('账号登录安全设置', 'AccountLoginSecurity', '[{"name":"登录验证码","model":"useCaptcha","placeholder":"是否启用登录验证码","options":"true,false"},{"name":"双因素校验(OTP)","model":"useOtp","placeholder":"是否启用双因素(OTP)校验","options":"true,false"},{"name":"OTP签发人","model":"otpIssuer","placeholder":"otp签发人"},{"name":"允许失败次数","model":"loginFailCount","placeholder":"登录失败n次后禁止登录"},{"name":"禁止登录时间","model":"loginFailMin","placeholder":"登录失败指定次数后禁止m分钟内再次登录"}]', '{"useCaptcha":"true","useOtp":"false","loginFailCount":"5","loginFailMin":"10","otpIssuer":"mayfly-go"}', '系统账号登录相关安全设置', '2023-06-17 11:02:11', 1, 'admin', '2023-06-17 14:18:07', 1, 'admin');
+INSERT INTO `t_sys_config` (name, `key`, params, value, remark, create_time, creator_id, creator, update_time, modifier_id, modifier)VALUES ('是否启用水印', 'UseWartermark', NULL, '1', '1: 启用、0: 不启用', '2022-08-25 23:36:35', 1, 'admin', '2022-08-26 10:02:52', 1, 'admin');
+INSERT INTO `t_sys_config` (name, `key`, params, value, remark, create_time, creator_id, creator, update_time, modifier_id, modifier)VALUES ('数据库查询最大结果集', 'DbQueryMaxCount', '[]', '200', '允许sql查询的最大结果集数。注: 0=不限制', '2023-02-11 14:29:03', 1, 'admin', '2023-02-11 14:40:56', 1, 'admin');
+INSERT INTO `t_sys_config` (name, `key`, params, value, remark, create_time, creator_id, creator, update_time, modifier_id, modifier)VALUES ('数据库是否记录查询SQL', 'DbSaveQuerySQL', '[]', '0', '1: 记录、0:不记录', '2023-02-11 16:07:14', 1, 'admin', '2023-02-11 16:44:17', 1, 'admin');
 COMMIT;
 
 -- ----------------------------
@@ -506,6 +507,7 @@ INSERT INTO t_sys_resource (id, pid, ui_path, `type`, status, name, code, weight
 INSERT INTO t_sys_resource (id, pid, ui_path, `type`, status, name, code, weight, meta, creator_id, creator, modifier_id, modifier, create_time, update_time) VALUES(106, 103, '12sSjal1/exahgl32/Glxag234/', 2, 1, '删除权限', 'authcert:del', 30000000, 'null', 1, 'admin', 1, 'admin', '2023-02-23 11:38:09', '2023-02-23 11:38:09');
 INSERT INTO t_sys_resource (id, pid, ui_path, `type`, status, name, code, weight, meta, creator_id, creator, modifier_id, modifier, create_time, update_time) VALUES(108, 61, 'RedisXq4/Exitx4al/Gxlagheg/', 2, 1, '数据删除', 'redis:data:del', 30000000, 'null', 1, 'admin', 1, 'admin', '2023-03-14 17:20:00', '2023-03-14 17:20:00');
 INSERT INTO t_sys_resource (id, pid, ui_path, `type`, status, name, code, weight, meta, creator_id, creator, modifier_id, modifier, create_time, update_time) VALUES(109, 3, '12sSjal1/lskeiql1/KMdsix43/', 2, 1, '关闭连接', 'machine:close-cli', 60000000, 'null', 1, 'admin', 1, 'admin', '2023-03-16 16:11:04', '2023-03-16 16:11:04');
+INSERT INTO t_sys_resource (id, pid, ui_path, `type`, status, name, code, weight, meta, creator_id, creator, modifier_id, modifier, create_time, update_time) VALUES(128, 87, 'Xlqig32x/Ulxaee23/MoOWr2N0/', 2, 1, '配置保存', 'config:save', 1687315135, 'null', 1, 'admin', 1, 'admin', '2023-06-21 10:38:55', '2023-06-21 10:38:55');
 COMMIT;
 
 -- ----------------------------
@@ -719,7 +721,8 @@ INSERT INTO `t_sys_role_resource` (role_id,resource_id,creator_id,creator,create
 	 (6,85,1,'admin','2023-03-14 17:29:00'),
 	 (6,87,1,'admin','2023-03-14 17:29:00'),
 	 (6,88,1,'admin','2023-03-14 17:29:00'),
-	 (1,109,1,'admin','2023-03-16 16:11:25');
+	 (1,109,1,'admin','2023-03-16 16:11:25'),
+     (1,128,1,'admin','2023-03-16 16:11:25');
 COMMIT;
 
 -- ----------------------------

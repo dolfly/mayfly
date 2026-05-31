@@ -22,6 +22,12 @@ export interface ResourceComponentConfig {
         name: string;
         color?: string;
     };
+    // 标签页唯一标识（可选，提供时开启独立标签页模式）
+    tabKey?: string;
+    // 标签页显示名称（可选）
+    tabLabel?: string;
+    // 传递给组件的 props（可选）
+    tabProps?: Record<string, any>;
 }
 
 export interface ResourceOpCtx {

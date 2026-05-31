@@ -1,5 +1,6 @@
 <template>
     <el-drawer
+        :append-to-body="false"
         :title="title"
         v-model="visible"
         :before-close="cancel"

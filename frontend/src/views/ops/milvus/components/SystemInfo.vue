@@ -209,13 +209,14 @@ import { useI18n } from 'vue-i18n';
 import { milvusApi } from '../api';
 import { useMilvusStore } from '@/views/ops/milvus/resource/store';
 
-const milvusStore = useMilvusStore();
-
 const { t } = useI18n();
 
 const props = defineProps<{
     milvusId: number;
+    tabKey?: string;
 }>();
+
+const milvusStore = useMilvusStore(props.tabKey || 'milvusStore');
 
 const loading = ref(false);
 const versionLoading = ref(false);
@@ -414,6 +415,8 @@ watch([() => props.milvusId, () => milvusStore.authCertName], () => {
 
 <style scoped>
 .system-info-container {
+    height: 100%;
+    overflow: auto;
     padding: 16px;
 }
 

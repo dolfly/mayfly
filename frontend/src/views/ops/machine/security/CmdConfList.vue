@@ -31,6 +31,7 @@
         </el-table>
 
         <el-drawer
+            :append-to-body="false"
             :title="$t('machine.cmdConfig')"
             v-model="dialogVisible"
             :show-close="false"

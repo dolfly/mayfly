@@ -1,5 +1,6 @@
 <template>
     <el-drawer
+        :append-to-body="false"
         :title="t('es.Reindex')"
         v-model="visible"
         size="40%"

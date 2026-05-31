@@ -1,5 +1,6 @@
 <template>
     <el-drawer
+        :append-to-body="false"
         :title="`${model.isAdd ? t('common.add') : t('common.edit')} ${model.idxName}`"
         v-model="visible"
         :destroy-on-close="false"

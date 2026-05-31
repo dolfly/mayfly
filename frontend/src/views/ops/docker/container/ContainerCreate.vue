@@ -1,5 +1,5 @@
 <template>
-    <el-drawer v-model="dialogVisible" :append-to-body="true" :destroy-on-close="true" :close-on-click-modal="false" :before-close="cancel" size="40%">
+    <el-drawer v-model="dialogVisible" :append-to-body="false" :destroy-on-close="true" :close-on-click-modal="false" :before-close="cancel" size="40%">
         <template #header>
             <DrawerHeader :header="$t('docker.createContainer')" :back="cancel">
                 <template #extra>

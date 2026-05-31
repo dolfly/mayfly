@@ -580,19 +580,16 @@ const initSetLayoutChange = () => {
         themeConfig.value.isShowLogo = true;
         themeConfig.value.isBreadcrumb = false;
         themeConfig.value.isCollapse = false;
-        themeConfig.value.isTagsview = true;
         themeConfig.value.isClassicSplitMenu = false;
     } else if (themeConfig.value.layout === 'columns') {
         themeConfig.value.isShowLogo = true;
         themeConfig.value.isBreadcrumb = true;
         themeConfig.value.isCollapse = false;
-        themeConfig.value.isTagsview = true;
         themeConfig.value.isClassicSplitMenu = false;
     } else {
         themeConfig.value.isShowLogo = false;
         themeConfig.value.isBreadcrumb = true;
         themeConfig.value.isCollapse = false;
-        themeConfig.value.isTagsview = true;
         themeConfig.value.isClassicSplitMenu = false;
     }
 

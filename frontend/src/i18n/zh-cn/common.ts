@@ -117,6 +117,8 @@ export default {
             close: '关闭',
             closeOther: '关闭其它',
             closeAll: '全部关闭',
+            closeLeft: '关闭左侧',
+            closeRight: '关闭右侧',
             fullscreen: '当前页全屏',
             closeFullscreen: '关闭全屏',
         },

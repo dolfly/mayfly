@@ -1,7 +1,8 @@
 <template>
-    <el-space>
-        <el-tooltip :content="t('db.selectDbPlaceholder')" placement="top">
-            <el-select size="small" v-model="selectedDb" style="width: 150px" @change="onChangeDb">
+    <div class="component-container">
+        <el-space>
+        <el-tooltip :content="t('db.selectDbPlaceholder')" placement="top" :teleported="false">
+            <el-select size="small" v-model="selectedDb" style="width: 150px" @change="onChangeDb" :teleported="false">
                 <el-option v-for="item in dbs" :key="item.name" :value="item.name">{{ item.name }}</el-option>
             </el-select>
         </el-tooltip>
@@ -53,6 +54,8 @@
         </el-table-column>
     </el-table>
 
+    </div>
+
     <CollectionsCreate v-model:visible="createDrawerVisible" :milvus-id="milvusId" :mode="drawerMode" :edit-data="editData" @success="loadList" />
 
     <el-dialog v-model="aliasDialogVisible" :title="$t('milvus.addAlias')" width="400px">
@@ -79,13 +82,14 @@ import { useI18n } from 'vue-i18n';
 import { milvusApi } from '../api';
 import CollectionsCreate from './CollectionsCreate.vue';
 
-const milvusStore = useMilvusStore();
-const { dbs, selectedDb } = storeToRefs(milvusStore);
-
 const { t } = useI18n();
 const props = defineProps<{
     milvusId: number;
+    tabKey?: string;
 }>();
+
+const milvusStore = useMilvusStore(props.tabKey || 'milvusStore');
+const { dbs, selectedDb } = storeToRefs(milvusStore);
 const emit = defineEmits(['changeTab']);
 
 const list = ref<any[]>([]);
@@ -313,6 +317,18 @@ watch(
 </script>
 
 <style scoped>
+.component-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.component-container :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+}
+
 pre {
     background: #f5f7fa;
     padding: 15px;

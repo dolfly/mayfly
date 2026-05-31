@@ -1,6 +1,7 @@
 <template>
-    <div class="card !p-2">
-        <el-row justify="space-between">
+    <div class="component-container">
+        <div class="card !p-2">
+            <el-row justify="space-between">
             <el-col :span="16">
                 <el-row :gutter="5">
                     <el-col :span="6">
@@ -21,15 +22,15 @@
                 </el-row>
             </el-col>
         </el-row>
-    </div>
+        </div>
 
-    <el-table :data="filterTableDatas" v-loading="state.loadingContainers">
+        <el-table :data="filterTableDatas" v-loading="state.loadingContainers">
         <el-table-column prop="name" :label="$t('docker.name')" :min-width="120" show-overflow-tooltip> </el-table-column>
         <el-table-column prop="imageName" :label="$t('docker.image')" :min-width="150" show-overflow-tooltip> </el-table-column>
 
         <el-table-column prop="state" :label="$t('common.status')" :min-width="110">
             <template #default="{ row }">
-                <el-dropdown @command="handleCommand">
+                <el-dropdown @command="handleCommand" :teleported="false">
                     <el-button :type="EnumValue.getEnumByValue(ContainerStateEnum, row.state)?.tag.type" round plain size="small">
                         {{ $t(EnumValue.getLabelByValue(ContainerStateEnum, row.state)) || '-' }}
                         <SvgIcon class="ml-1" :name="EnumValue.getEnumByValue(ContainerStateEnum, row.state)?.extra.icon" />
@@ -68,7 +69,7 @@
                             <span>{{ Number(row.stats.memoryPercent).toFixed(2) }}%</span>
                         </el-text>
 
-                        <el-popover placement="right" :width="300" trigger="hover">
+                        <el-popover placement="right" :width="300" trigger="hover" :teleported="false">
                             <template #reference>
                                 <SvgIcon class="mt5 ml5" color="var(--el-color-primary)" name="MoreFilled" />
                             </template>
@@ -129,7 +130,7 @@
 
                     <el-button @click="openLog(row)" type="success" link plain>{{ $t('docker.log') }}</el-button>
 
-                    <el-dropdown @command="handleCommand">
+                    <el-dropdown @command="handleCommand" :teleported="false">
                         <el-button type="primary" link plain class="ml-3"> {{ $t('common.more') }} <SvgIcon name="arrow-down" :size="12" /> </el-button>
 
                         <template #dropdown>
@@ -144,6 +145,7 @@
             </template>
         </el-table-column>
     </el-table>
+    </div>
 
     <el-dialog
         v-if="terminalDialog.visible"
@@ -358,3 +360,17 @@ function formatCpuValue(t: number) {
     return Number((t / Math.pow(num, 3)).toFixed(2)) + ' s';
 }
 </script>
+
+<style scoped>
+.component-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.component-container :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+}
+</style>

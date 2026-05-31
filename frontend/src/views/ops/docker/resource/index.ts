@@ -27,7 +27,16 @@ export const NodeTypeContainerTag = new NodeType(TagTreeNode.TagPath).withLoadNo
 });
 
 const NodeTypeContainer = new NodeType(11).withNodeClickFunc(async (node: TagTreeNode) => {
-    (await node.ctx?.addResourceComponent(ContainerOpComp)).init(node.params.id);
+    const container = node.params;
+    const tabKey = `container_${container.id}`;
+    const tabLabel = container.name;
+    const compRef = await node.ctx?.addResourceComponent({
+        ...ContainerOpComp,
+        tabKey,
+        tabLabel,
+        tabProps: { containerId: container.id, tabKey },
+    });
+    compRef?.init?.(container.id);
 });
 
 export default {

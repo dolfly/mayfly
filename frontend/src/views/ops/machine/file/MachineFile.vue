@@ -32,7 +32,7 @@
                                     <el-button class="!ml-1" type="primary" circle size="small" icon="Refresh" @click="refresh()"> </el-button>
 
                                     <!-- 文件&文件夹上传 -->
-                                    <el-dropdown class="machine-file-upload-exec" trigger="click" size="small">
+                                    <el-dropdown class="machine-file-upload-exec" trigger="click" size="small" :teleported="false">
                                         <span>
                                             <el-button
                                                 v-auth="'machine:file:upload'"
@@ -131,7 +131,7 @@
                                     </el-button>
 
                                     <el-button-group v-if="state.copyOrMvFile.paths.length > 0" size="small" class="!ml-1">
-                                        <el-tooltip effect="customized" raw-content placement="top">
+                                        <el-tooltip effect="customized" raw-content placement="top" :teleported="false">
                                             <template #content>
                                                 <div v-for="path in state.copyOrMvFile.paths" v-bind:key="path">{{ path }}</div>
                                             </template>
@@ -204,7 +204,7 @@
 
                     <el-table-column :width="100">
                         <template #header>
-                            <el-popover placement="top" :width="270" trigger="hover">
+                            <el-popover placement="top" :width="270" trigger="hover" :teleported="false">
                                 <template #reference>
                                     <SvgIcon name="QuestionFilled" :size="18" class="pointer-icon mr-2" />
                                 </template>
@@ -221,6 +221,7 @@
                                     :title="`${scope.row.path} - ${$t('machine.fileDetail')}`"
                                     :width="520"
                                     trigger="click"
+                                    :teleported="false"
                                     @show="showFileStat(scope.row)"
                                 >
                                     <template #reference>
@@ -308,7 +309,7 @@
 <script lang="ts" setup>
 import { Msg } from '@/hooks/useI18n';
 import { ElInput } from 'element-plus';
-import { computed, defineAsyncComponent, onMounted, reactive, ref, toRefs } from 'vue';
+import {computed, defineAsyncComponent, getCurrentInstance, onMounted, reactive, ref, toRefs} from 'vue';
 import { machineApi, uploadFile, uploadFolder } from '../api';
 
 import { isTrue, notBlank } from '@/common/assert';
@@ -333,6 +334,7 @@ const props = defineProps({
     fileId: { type: Number, default: 0 },
     path: { type: String, default: '' },
     isFolder: { type: Boolean, default: true },
+    tabKey: { type: String, default: '' },
 });
 
 const token = getToken();
@@ -379,7 +381,14 @@ const state = reactive({
 
 const { basePath, nowPath, loading, fileNameFilter, fileContent, createFileDialog } = toRefs(state);
 
+const emits = defineEmits(['init']);
+
+    // Init as MachineOp component
 onMounted(async () => {
+    
+    emits('init', { name: 'tag.machineOp', tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
+    
+    
     state.basePath = props.path;
     const machineId = props.machineId;
 
@@ -877,7 +886,7 @@ const dontOperate = (data: any) => {
     return ls.indexOf(path) != -1;
 };
 
-defineExpose({ showFileContent });
+defineExpose({ showFileContent, onRefresh: refresh });
 </script>
 <style lang="scss">
 .machine-file-upload-exec {

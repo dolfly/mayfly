@@ -29,6 +29,8 @@ export default {
         indexStats: 'Stats',
         opViewColumns: 'Option View Columns',
         opIndex: 'Index Management',
+        opDataManage: 'Data Management',
+        selectIndexFirst: 'Please select an index first',
         opSearch: 'Search',
         searchParamsPreview: 'Search Params Preview',
         opBasicSearch: 'Basic Search',

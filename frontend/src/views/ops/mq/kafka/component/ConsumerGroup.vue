@@ -1,5 +1,5 @@
 <template>
-    <div class="kafka-consumer-group h-full card !p-1">
+    <div class="kafka-consumer-group h-full card !p-1 flex flex-col gap-2">
         <div class="toolbar flex items-center justify-between mb-2">
             <div class="flex items-center">
                 <el-input v-model="searchGroup" :placeholder="$t('mq.kafka.searchGroup')" clearable size="small" class="w-60" @clear="loadGroups" />
@@ -12,7 +12,7 @@
             </div>
         </div>
 
-        <el-table :data="filteredGroups" stripe style="width: 100%" v-loading="loading">
+        <el-table :data="filteredGroups" stripe v-loading="loading">
             <el-table-column prop="Group" :label="$t('mq.kafka.groupId')" min-width="250" />
             <el-table-column prop="Coordinator" :label="$t('mq.kafka.coordinator')" min-width="150" />
             <el-table-column prop="State" :label="$t('mq.kafka.state')" min-width="120">
@@ -117,6 +117,11 @@ const getStateTagType = (state: string) => {
 
 <style lang="scss" scoped>
 .kafka-consumer-group {
+    :deep(.el-table) {
+        flex: 1;
+        min-height: 0;
+    }
+
     .toolbar {
         display: flex;
         justify-content: space-between;

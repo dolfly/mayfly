@@ -1,8 +1,11 @@
 <template>
-    <el-button size="small" type="primary" @click="handleCreate" icon="plus">{{ $t('milvus.createDatabase') }}</el-button>
-    <el-button size="small" text icon="refresh" @click="loadList" :loading="loading" />
+    <div class="component-container">
+        <div>
+            <el-button size="small" type="primary" @click="handleCreate" icon="plus">{{ $t('milvus.createDatabase') }}</el-button>
+            <el-button size="small" text icon="refresh" @click="loadList" :loading="loading" />
+        </div>
 
-    <el-table :data="dbs" style="width: 100%">
+        <el-table :data="dbs" style="width: 100%">
         <el-table-column prop="name" :label="$t('milvus.dbName')" sortable>
             <template #default="{ row }">
                 <el-link type="primary" underline="never" @click="handleUse(row)">{{ row.name }}</el-link>
@@ -15,7 +18,8 @@
                 <el-button type="danger" size="small" @click="handleDrop(row)">{{ $t('common.delete') }}</el-button>
             </template>
         </el-table-column>
-    </el-table>
+        </el-table>
+    </div>
 
     <el-dialog v-model="createDialog.visible" :title="$t('milvus.createDatabase')" width="500px">
         <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="auto">
@@ -61,12 +65,13 @@ import { storeToRefs } from 'pinia';
 import { onMounted, ref, watch } from 'vue';
 import { milvusApi, timezones } from '../api';
 
-const milvusStore = useMilvusStore();
-const { dbs } = storeToRefs(milvusStore);
-
 const props = defineProps<{
     milvusId: number;
+    tabKey?: string;
 }>();
+
+const milvusStore = useMilvusStore(props.tabKey || 'milvusStore');
+const { dbs } = storeToRefs(milvusStore);
 
 const emits = defineEmits(['use']);
 
@@ -194,4 +199,16 @@ watch(
 onMounted(loadList);
 </script>
 
-<style scoped></style>
+<style scoped>
+.component-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.component-container :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+}
+</style>

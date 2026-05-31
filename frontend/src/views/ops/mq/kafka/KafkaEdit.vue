@@ -1,6 +1,6 @@
 <template>
     <div>
-        <el-drawer :title="title" v-model="dialogVisible" :before-close="onCancel" :close-on-click-modal="false" size="40%" :destroy-on-close="true">
+        <el-drawer :append-to-body="false" :title="title" v-model="dialogVisible" :before-close="onCancel" :close-on-click-modal="false" size="40%" :destroy-on-close="true">
             <el-form :model="form" ref="kafkaFormRef" :rules="rules" label-width="auto">
                 <el-form-item prop="tagCodePaths" :label="$t('tag.relateTag')" required>
                     <TagTreeSelect multiple :code="form.code" v-model="form.tagCodePaths" />

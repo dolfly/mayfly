@@ -1,6 +1,7 @@
 <template>
     <div>
         <el-drawer
+            :append-to-body="false"
             :title="title"
             v-model="dialogVisible"
             :close-on-click-modal="false"

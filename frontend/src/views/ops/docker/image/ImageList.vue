@@ -1,6 +1,7 @@
 <template>
-    <div class="card !p-2">
-        <el-row :gutter="5">
+    <div class="component-container">
+        <div class="card !p-2">
+            <el-row :gutter="5">
             <el-col :span="4">
                 <el-input :placeholder="$t('docker.imageName')" v-model="params.name" plain clearable></el-input>
             </el-col>
@@ -18,9 +19,9 @@
                 </div>
             </el-col>
         </el-row>
-    </div>
+        </div>
 
-    <el-table :data="filterTableDatas" v-loading="state.loadingImages">
+        <el-table :data="filterTableDatas" v-loading="state.loadingImages">
         <el-table-column prop="id" label="ID" :min-width="100" show-overflow-tooltip>
             <template #default="{ row }">
                 <el-link type="primary" underline="never">
@@ -67,6 +68,7 @@
             </template>
         </el-table-column>
     </el-table>
+    </div>
 
     <el-dialog
         v-if="terminalDialog.visible"
@@ -206,3 +208,17 @@ const closeTerminal = () => {
     state.terminalDialog.visible = false;
 };
 </script>
+
+<style scoped>
+.component-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.component-container :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+}
+</style>

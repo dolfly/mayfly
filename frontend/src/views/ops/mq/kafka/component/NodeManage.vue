@@ -1,5 +1,5 @@
 <template>
-    <div class="kafka-node-manage h-full card !p-1">
+    <div class="kafka-node-manage h-full card !p-1 flex flex-col gap-2">
         <div class="toolbar flex items-center mb-2">
             <el-button @click="refreshBrokers" icon="refresh" :loading="loading" size="small" plain>
                 {{ $t('common.refresh') }}
@@ -20,6 +20,7 @@
         </el-table>
 
         <el-drawer
+            :append-to-body="false"
             v-model="openDrawer"
             :before-close="cancel"
             :destroy-on-close="true"
@@ -136,6 +137,11 @@ const viewBrokerConfig = async (broker: Broker) => {
 </script>
 
 <style lang="scss" scoped>
+.kafka-node-manage :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+}
+
 .toolbar {
     display: flex;
     justify-content: space-between;

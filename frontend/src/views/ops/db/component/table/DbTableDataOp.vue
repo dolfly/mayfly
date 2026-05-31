@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <el-row>
+    <div class="h-full flex flex-col gap-1">
+        <el-row class="flex-shrink-0">
             <el-col :span="8">
                 <div class="mt-1">
                     <el-link :disabled="state.loading" @click="onRefresh()" icon="refresh" underline="never" class="ml-1"> </el-link>
@@ -12,6 +12,7 @@
                         width="auto"
                         :title="$t('db.tableFieldConf')"
                         trigger="click"
+                        :teleported="false"
                         @hide="triggerCheckedColumns"
                     >
                         <div><el-input v-model="checkedShowColumns.searchKey" size="small" :placeholder="$t('db.columnFilterPlaceholder')" /></div>
@@ -45,16 +46,16 @@
                     <el-link @click="onShowAddDataDialog()" type="primary" icon="plus" underline="never"></el-link>
                     <el-divider direction="vertical" border-style="dashed" />
 
-                    <el-tooltip :show-after="500" effect="dark" content="commit" placement="top">
+                    <el-tooltip :show-after="500" effect="dark" content="commit" placement="top" :teleported="false">
                         <el-link @click="onCommit()" type="success" icon="CircleCheck" underline="never"> </el-link>
                     </el-tooltip>
                     <el-divider direction="vertical" border-style="dashed" />
 
-                    <el-tooltip :show-after="500" v-if="hasUpdatedFileds" :content="$t('db.submitUpdate')" placement="top">
+                    <el-tooltip :show-after="500" v-if="hasUpdatedFileds" :content="$t('db.submitUpdate')" placement="top" :teleported="false">
                         <el-link @click="submitUpdateFields()" type="success" underline="never" class="!text-[12px]">{{ $t('common.submit') }}</el-link>
                     </el-tooltip>
                     <el-divider v-if="hasUpdatedFileds" direction="vertical" border-style="dashed" />
-                    <el-tooltip :show-after="500" v-if="hasUpdatedFileds" :content="$t('db.cancelUpdate')" placement="top">
+                    <el-tooltip :show-after="500" v-if="hasUpdatedFileds" :content="$t('db.cancelUpdate')" placement="top" :teleported="false">
                         <el-link @click="cancelUpdateFields" type="warning" underline="never" class="!text-[12px]">{{ $t('common.cancel') }}</el-link>
                     </el-tooltip>
                 </div>
@@ -74,6 +75,7 @@
                     highlight-first-item
                     value-key="columnName"
                     ref="condInputRef"
+                    :teleported="false"
                 >
                     <template #suffix>
                         <SvgIcon @click="onSelectByCondition" name="search" />
@@ -95,7 +97,7 @@
                     </template>
 
                     <template #prepend>
-                        <el-popover :visible="state.condPopVisible" trigger="click" :width="320" placement="right">
+                        <el-popover :visible="state.condPopVisible" trigger="click" :width="320" placement="right" :teleported="false">
                             <template #reference>
                                 <el-button @click.stop="chooseCondColumnName" style="color: var(--el-color-success)" text size="small">
                                     {{ $t('db.selectColumn') }}
@@ -133,13 +135,13 @@
 
         <db-table-data
             ref="dbTableRef"
+            class="flex-1 min-h-0 overflow-hidden"
             :db-id="dbId"
             :db="dbName"
             :data="datas"
             :table="tableName"
             :columns="columns"
             :loading="loading"
-            :height="tableHeight"
             :page-size="pageSize"
             :page-num="pageNum"
             :show-column-tip="true"
@@ -149,7 +151,7 @@
             @data-delete="onRefresh"
         ></db-table-data>
 
-        <el-row type="flex" class="mt-2" :gutter="10" justify="space-between" style="user-select: none">
+        <el-row type="flex" class="flex-shrink-0" :gutter="10" justify="space-between" style="user-select: none">
             <el-col :span="12">
                 <el-text
                     id="copyValue"
@@ -185,7 +187,7 @@
                     <el-link class="op-page" underline="never" @click="++pageNum" :disabled="datas.length < pageSize" icon="Right" />
                     <el-link class="op-page" underline="never" @click="handleEndPage" :disabled="datas.length < pageSize" icon="DArrowRight" />
                     <div style="width: 90px" class="op-page ml-2">
-                        <el-select size="small" :default-first-option="true" v-model="pageSize" @change="handleSizeChange">
+                        <el-select size="small" :default-first-option="true" v-model="pageSize" @change="handleSizeChange" :teleported="false">
                             <el-option
                                 style="font-size: 12px; height: 24px; line-height: 24px"
                                 v-for="(op, i) in pageSizes"
@@ -206,7 +208,7 @@
         <el-dialog v-model="conditionDialog.visible" :title="conditionDialog.title" width="500px">
             <el-row gutter="5">
                 <el-col :span="5">
-                    <el-select v-model="conditionDialog.condition">
+                    <el-select v-model="conditionDialog.condition" :teleported="false">
                         <el-option label="=" value="="> </el-option>
                         <el-option label="LIKE" value="LIKE"> </el-option>
                         <el-option label=">" value=">"> </el-option>
@@ -273,10 +275,6 @@ const props = defineProps({
         type: String,
         required: true,
     },
-    tableHeight: {
-        type: [String],
-        default: '600px',
-    },
 });
 
 const dbTableRef: Ref = ref(null);
@@ -325,7 +323,6 @@ const state = reactive({
         title: '',
         visible: false,
     },
-    tableHeight: '600px',
     hasUpdatedFileds: false,
     dbDialect: {} as DbDialect,
 
@@ -340,20 +337,12 @@ const state = reactive({
 const { datas, condition, loading, columns, checkedShowColumns, pageNum, pageSize, pageSizes, sql, hasUpdatedFileds, conditionDialog, addDataDialog } =
     toRefs(state);
 
-watch(
-    () => props.tableHeight,
-    (newValue: any) => {
-        state.tableHeight = newValue;
-    }
-);
-
 const getNowDbInst = () => {
     return DbInst.getInst(props.dbId);
 };
 
 onMounted(async () => {
     console.log('in table data mounted');
-    state.tableHeight = props.tableHeight;
     await onRefresh();
 
     state.dbDialect = getNowDbInst().getDialect();

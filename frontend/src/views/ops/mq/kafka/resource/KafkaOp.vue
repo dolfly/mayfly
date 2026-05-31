@@ -51,8 +51,13 @@ interface Topic {
 }
 interface Partitions {}
 
+const props = defineProps<{
+    kafkaId?: number;
+    tabKey?: string;
+}>();
+
 const activeTab = ref('node');
-const kafkaId = ref<number>(0);
+const kafkaId = ref<number>(props.kafkaId || 0);
 const selectedTopic = ref<string>('');
 const loading = ref(false);
 const topics = ref<any[]>([]);
@@ -115,7 +120,7 @@ const handleConsumeMessage = (topic: string) => {
 };
 
 onMounted(() => {
-    emits('init', { name: KafkaOpComp.name, ref: getCurrentInstance()?.exposed });
+    emits('init', { name: KafkaOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
 });
 
 defineExpose({
@@ -130,7 +135,11 @@ defineExpose({
 
         .el-tabs__content {
             height: calc(100% - 55px);
-            overflow: auto;
+            overflow: visible;
+        }
+
+        .el-tab-pane {
+            height: 100%;
         }
     }
 }

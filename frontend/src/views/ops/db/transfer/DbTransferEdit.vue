@@ -1,6 +1,6 @@
 <template>
     <div class="db-transfer-edit">
-        <el-drawer :title="title" v-model="dialogVisible" :before-close="cancel" :destroy-on-close="true" :close-on-click-modal="false" size="45%">
+        <el-drawer :append-to-body="false" :title="title" v-model="dialogVisible" :before-close="cancel" :destroy-on-close="true" :close-on-click-modal="false" size="45%">
             <template #header>
                 <DrawerHeader :header="title" :back="cancel" />
             </template>

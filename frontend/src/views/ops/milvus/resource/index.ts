@@ -21,12 +21,25 @@ export const MilvusOpComp: ResourceComponentConfig = {
     icon: MilvusIcon,
 };
 
-// milvus 授权凭证节点类型
+// milvus 授权凭证节点类型：点击后打开独立标签页
 const NodeTypeMilvusAc = new NodeType(TagResourceTypeEnum.Milvus.value * 10 + 1).withNodeClickFunc(async (node: TagTreeNode) => {
+    const milvus = node.params;
+    const milvusId = milvus.id;
+    const acName = milvus.selectAuthCert?.name || '';
+    const acUsername = milvus.selectAuthCert?.username;
+    // 标签页唯一标识：milvusId + acName，确保不重复创建
+    const tabKey = `milvus_${milvusId}_${acName}`;
+    // 标签页显示名：milvus实例名 + 用户名（如有）
+    const tabLabel = acUsername ? `${milvus.name} (${acUsername})` : milvus.name;
 
-    (await node.ctx?.addResourceComponent(MilvusOpComp))?.initMilvus(node.params);
-
-    console.log(node.params);
+    const compRef = await node.ctx?.addResourceComponent({
+        ...MilvusOpComp,
+        tabKey,
+        tabLabel,
+        tabProps: { milvusId, acName, tabKey },
+    });
+    // 仅在首次创建时初始化（已存在的标签页只是激活，不重置状态）
+    compRef?.initMilvus?.(milvus);
 });
 
 const NodeTypeMilvus = new NodeType(TagResourceTypeEnum.Milvus.value).withLoadNodesFunc((node: TagTreeNode) => {

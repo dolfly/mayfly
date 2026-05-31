@@ -1,66 +1,5 @@
 <template>
-    <div class="h-full machine-terminal-tabs">
-        <el-tabs v-if="state.tabs.size > 0" type="card" @tab-remove="onRemoveTab" v-model="state.activeTermName" class="!h-full w-full">
-            <el-tab-pane class="h-full! flex flex-col" closable v-for="dt in state.tabs.values()" :label="dt.label" :name="dt.key" :key="dt.key">
-                <template #label>
-                    <el-popconfirm @confirm="handleReconnect(dt, true)" :title="$t('machine.reConnTips')" v-if="dt.type === 'terminal'">
-                        <template #reference>
-                            <el-icon
-                                class="mr-1"
-                                :color="EnumValue.getEnumByValue(TerminalStatusEnum, dt.status)?.extra?.iconColor"
-                                :title="dt.status == TerminalStatusEnum.Connected.value ? '' : $t('machine.clickReConn')"
-                            >
-                                <Connection />
-                            </el-icon>
-                        </template>
-                    </el-popconfirm>
-                    <el-popover :show-after="1000" placement="bottom-start" trigger="hover" :width="250">
-                        <template #reference>
-                            <div>
-                                <span class="machine-terminal-tab-label">{{ dt.label }}</span>
-                            </div>
-                        </template>
-                        <template #default>
-                            <el-descriptions :column="1" size="small">
-                                <el-descriptions-item :label="$t('common.name')"> {{ dt.params?.name }} </el-descriptions-item>
-                                <el-descriptions-item label="host"> {{ dt.params?.ip }} : {{ dt.params?.port }} </el-descriptions-item>
-                                <el-descriptions-item label="username"> {{ dt.params?.selectAuthCert.username }} </el-descriptions-item>
-                                <el-descriptions-item label="remark"> {{ dt.params?.remark }} </el-descriptions-item>
-                            </el-descriptions>
-                        </template>
-                    </el-popover>
-                </template>
-
-                <!-- 终端类型 tab -->
-                <div v-if="dt.type === 'terminal'" class="terminal-wrapper flex-1 min-h-0">
-                    <TerminalBody
-                        v-if="dt.params.protocol == MachineProtocolEnum.Ssh.value"
-                        :mount-init="false"
-                        @status-change="terminalStatusChange(dt.key, $event)"
-                        :ref="(el: any) => setTerminalRef(el, dt.key)"
-                        :socket-url="dt.socketUrl"
-                        :machine-id="dt.params.id"
-                        :auth-cert-name="dt.authCert"
-                        :file-id="0"
-                        :protocol="dt.params.protocol"
-                    />
-                    <machine-rdp
-                        v-if="dt.params.protocol != MachineProtocolEnum.Ssh.value"
-                        :machine-id="dt.params.id"
-                        :auth-cert="dt.authCert"
-                        :protocol="dt.params.protocol"
-                        :ref="(el: any) => setTerminalRef(el, dt.key)"
-                        @status-change="terminalStatusChange(dt.key, $event)"
-                    />
-                </div>
-
-                <!-- 文件操作类型 tab -->
-                <div v-if="dt.type === 'file'" class="file-wrapper flex-1 min-h-0">
-                    <machine-file :machine-id="dt.machineId" :auth-cert-name="dt.authCertName" :protocol="dt.protocol" :file-id="dt.fileId" :path="dt.path" />
-                </div>
-            </el-tab-pane>
-        </el-tabs>
-
+    <div class="machine-op-manager">
         <el-dialog v-if="infoDialog.visible" v-model="infoDialog.visible">
             <el-descriptions :title="$t('common.detail')" :column="3" border>
                 <el-descriptions-item :span="1.5" label="ID">{{ infoDialog.data.id }}</el-descriptions-item>
@@ -101,6 +40,7 @@
         <process-list v-model:visible="processDialog.visible" v-model:machineId="processDialog.machineId" />
 
         <script-manage
+            v-if="serviceDialog.machineId"
             :title="serviceDialog.title"
             v-model:visible="serviceDialog.visible"
             v-model:machineId="serviceDialog.machineId"
@@ -108,6 +48,7 @@
         />
 
         <file-conf-list
+            v-if="fileDialog.machine"
             v-model:visible="fileDialog.visible"
             :machine-id="fileDialog.machine?.id"
             :auth-cert-name="fileDialog.machine?.selectAuthCert?.name"
@@ -119,21 +60,44 @@
         <machine-stats v-model:visible="machineStatsDialog.visible" :machineId="machineStatsDialog.machineId" :title="machineStatsDialog.title" />
 
         <machine-rec v-model:visible="machineRecDialog.visible" :machineId="machineRecDialog.machineId" :title="machineRecDialog.title" />
+
+        <!-- Terminal section (merged from MachineTerminal) -->
+        <div v-if="machineRef" class="machine-terminal-wrapper">
+            <div class="terminal-body flex-1 min-h-0">
+                <TerminalBody
+                    v-if="machineRef.protocol == MachineProtocolEnum.Ssh.value"
+                    :mount-init="false"
+                    @status-change="onStatusChange"
+                    ref="terminalRef"
+                    :socket-url="socketUrlRef"
+                    :machine-id="machineRef.id"
+                    :auth-cert-name="authCertRef"
+                    :file-id="0"
+                    :protocol="machineRef.protocol"
+                />
+                <machine-rdp
+                    v-if="machineRef.protocol != MachineProtocolEnum.Ssh.value"
+                    :machine-id="machineRef.id"
+                    :auth-cert="authCertRef"
+                    :protocol="machineRef.protocol"
+                    ref="terminalRef"
+                    @status-change="onStatusChange"
+                />
+            </div>
+        </div>
     </div>
 </template>
 
 <script lang="ts" setup>
 import EnumValue from '@/common/Enum';
 import { formatDate } from '@/common/utils/format';
-import { hasPerms } from '@/components/auth/auth';
 import MachineRdp from '@/components/terminal-rdp/MachineRdp.vue';
 import TerminalBody from '@/components/terminal/TerminalBody.vue';
 import { TerminalStatus, TerminalStatusEnum } from '@/components/terminal/common';
-import { ResourceOpCtx } from '@/views/ops/component/tag';
-import MachineFile from '@/views/ops/machine/file/MachineFile.vue';
-import { MachineOpComp } from '@/views/ops/machine/resource';
+import { ResourceOpCtx, ResourceComponentConfig } from '@/views/ops/component/tag';
+import { MachineFileComp } from '@/views/ops/machine/resource';
 import { ResourceOpCtxKey } from '@/views/ops/resource/resource';
-import { defineAsyncComponent, getCurrentInstance, inject, nextTick, onMounted, reactive, toRefs, watch } from 'vue';
+import { defineAsyncComponent, getCurrentInstance, inject, nextTick, onMounted, reactive, ref, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import TagCodePath from '../../component/TagCodePath.vue';
@@ -146,49 +110,20 @@ const FileConfList = defineAsyncComponent(() => import('../file/FileConfList.vue
 const MachineStats = defineAsyncComponent(() => import('../MachineStats.vue'));
 const MachineRec = defineAsyncComponent(() => import('../MachineRec.vue'));
 const ProcessList = defineAsyncComponent(() => import('../ProcessList.vue'));
+const MachineFile = defineAsyncComponent(() => import('../file/MachineFile.vue'));
+
+// Local self-reference for terminal tab creation (avoids circular dependency with index.ts)
+const MachineOpSelf = defineAsyncComponent(() => import('./MachineOp.vue'));
 
 const { t } = useI18n();
-
 const router = useRouter();
-
-// 机器信息类型定义
-interface MachineInfo {
-    id: number;
-    name: string;
-    ip: string;
-    port: number;
-    protocol: number;
-    remark?: string;
-    selectAuthCert: {
-        name: string;
-        username: string;
-    };
-}
-
-const perms = {
-    addMachine: 'machine:add',
-    updateMachine: 'machine:update',
-    delMachine: 'machine:del',
-    terminal: 'machine:terminal',
-    closeCli: 'machine:close-cli',
-};
-
-// 该用户拥有的的操作列按钮权限，使用v-if进行判断，v-auth对el-dropdown-item无效
-const actionBtns = hasPerms([perms.updateMachine, perms.closeCli]);
-
-const emits = defineEmits(['init']);
 
 const resourceOpCtx: ResourceOpCtx | undefined = inject(ResourceOpCtxKey);
 
 const state = reactive({
-    defaultExpendKey: [] as any,
-    params: {
-        pageNum: 1,
-        pageSize: 0,
-        ip: null,
-        name: null,
-        tagPath: '',
-    },
+    // Terminal status (from MachineTerminal)
+    status: TerminalStatusEnum.Disconnected.value,
+
     infoDialog: {
         visible: false,
         data: null as any,
@@ -205,7 +140,7 @@ const state = reactive({
     },
     fileDialog: {
         visible: false,
-        machine: null as MachineInfo | null,
+        machine: null as any,
     },
     machineStatsDialog: {
         visible: false,
@@ -218,51 +153,72 @@ const state = reactive({
         machineId: 0,
         title: '',
     },
-    activeTermName: '',
-    tabs: new Map<string, any>(),
 });
+
+const socketUrlRef = ref('');
+const authCertRef = ref('');
+const machineRef = ref();
 
 const { infoDialog, serviceDialog, processDialog, fileDialog, machineStatsDialog, machineRecDialog } = toRefs(state);
 
-let openIds: any = {};
+const terminalRef = ref();
 
-watch(
-    () => state.activeTermName,
-    (newValue, oldValue) => {
-        fitTerminal();
+const props = defineProps<{
+    tabKey?: string;
+}>();
 
-        // 只有终端类型才需要 blur/focus
-        const oldTab = state.tabs.get(oldValue);
-        const newTab = state.tabs.get(newValue);
-
-        if (oldTab?.type === 'terminal') {
-            terminalRefs[oldValue]?.blur && terminalRefs[oldValue]?.blur();
-        }
-        if (newTab?.type === 'terminal') {
-            terminalRefs[newValue]?.focus && terminalRefs[newValue]?.focus();
-        }
-
-        resourceOpCtx?.setCurrentTreeKey(newTab?.authCert || newTab?.authCertName);
-    }
-);
+const emits = defineEmits(['init']);
 
 onMounted(() => {
-    emits('init', { name: MachineOpComp.name, ref: getCurrentInstance()?.exposed });
+    // Init as MachineOp component
+    emits('init', { name: 'tag.machineOp', tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
+
+    // Auto-connect terminal if this instance is a terminal tab
+    // if (props.machine?.selectAuthCert) {
+    //     nextTick(() => {
+    //         handleReconnect();
+    //         setTimeout(() => fitTerminal(), 300);
+    //     });
+    // }
 });
 
+// ---- Terminal methods (from MachineTerminal) ----
+
+const onStatusChange = (status: TerminalStatus) => {
+    state.status = status;
+};
+
+const handleReconnect = () => {
+    terminalRef.value?.init?.();
+};
+
+const fitTerminal = () => {
+    terminalRef.value?.fitTerminal?.();
+};
+
+const close = () => {
+    terminalRef.value?.close?.();
+};
+
+const focus = () => {
+    terminalRef.value?.focus?.();
+};
+
+const blur = () => {
+    terminalRef.value?.blur?.();
+};
+
+// ---- Terminal tab creation ----
+
 const openTerminal = (machine: any, ex?: boolean) => {
-    // 授权凭证名
     const ac = machine.selectAuthCert.name;
 
-    // 新窗口打开
+    // Open in new window
     if (ex) {
         if (machine.protocol == MachineProtocolEnum.Ssh.value) {
             const { href } = router.resolve({
                 path: `/machine/terminal`,
-                query: {
-                    ac,
-                    name: machine.name,
-                },
+                query: { ac, name: machine.name },
             });
             window.open(href, '_blank');
             return;
@@ -270,46 +226,51 @@ const openTerminal = (machine: any, ex?: boolean) => {
         if (machine.protocol == MachineProtocolEnum.Rdp.value) {
             const { href } = router.resolve({
                 path: `/machine/terminal-rdp`,
-                query: {
-                    machineId: machine.id,
-                    ac: ac,
-                    name: machine.name,
-                },
+                query: { machineId: machine.id, ac: ac, name: machine.name },
             });
             window.open(href, '_blank');
             return;
         }
     }
-
-    let { name } = machine;
-    const labelName = `${machine.selectAuthCert.username}@${name}`;
-
-    // 同一个机器的终端打开多次，key后添加下划线和数字区分
-    openIds[ac] = openIds[ac] ? ++openIds[ac] : 1;
-    let sameIndex = openIds[ac];
-
-    let key = `${ac}_${sameIndex}`;
-    // 只保留name的15个字，超出部分只保留前后10个字符，中间用省略号代替
-    const label = labelName.length > 15 ? labelName.slice(0, 10) + '...' + labelName.slice(-10) : labelName;
-
-    let tab = {
-        key,
-        label: `${label}${sameIndex === 1 ? '' : ':' + sameIndex}`, // label组成为:总打开term次数+name+同一个机器打开的次数
-        type: 'terminal',
-        params: machine,
-        authCert: ac,
-        socketUrl: getMachineTerminalSocketUrl(ac),
-        status: TerminalStatusEnum.Disconnected.value,
-    };
-
-    state.tabs.set(key, tab);
-
-    nextTick(() => {
-        handleReconnect(tab);
-        state.activeTermName = key;
+    
+    socketUrlRef.value = getMachineTerminalSocketUrl(ac)
+    machineRef.value = machine;
+    authCertRef.value = ac
+    nextTick(()=>{
+        handleReconnect();
         setTimeout(() => fitTerminal(), 300);
+    })
+};
+
+// ---- File tab creation ----
+
+const onFileConfigSelect = (fileConfig: { fileId: number; path: string; name: string; type: number }) => {
+    const machine = state.fileDialog.machine;
+    if (!machine) return;
+
+    const machineId = machine.id;
+    const authCertName = machine.selectAuthCert.name;
+    const tabKey = `machine_file_${machine.code}_${fileConfig.fileId}`;
+
+    const labelName = `${t('machine.fileTabPrefix')}${machine.selectAuthCert.username}@${machine.name}/${fileConfig.name}`;
+    const tabLabel = labelName.length > 25 ? labelName.slice(0, 18) + '...' + labelName.slice(-7) : labelName;
+
+    resourceOpCtx?.addResourceComponent({
+        ...MachineFileComp,
+        tabKey,
+        tabLabel,
+        tabProps: {
+            tabKey,
+            machineId,
+            authCertName,
+            protocol: machine.protocol,
+            fileId: fileConfig.fileId,
+            path: fileConfig.path,
+        },
     });
 };
+
+// ---- Dialog methods ----
 
 const serviceManager = (row: any) => {
     const authCert = row.selectAuthCert;
@@ -319,9 +280,6 @@ const serviceManager = (row: any) => {
     state.serviceDialog.title = `${row.name} => ${authCert.username}@${row.ip}`;
 };
 
-/**
- * 显示机器状态统计信息
- */
 const showMachineStats = (machine: any) => {
     state.machineStatsDialog.machineId = machine.id;
     state.machineStatsDialog.title = `${t('machine.machineState')}: ${machine.name} => ${machine.ip}`;
@@ -331,46 +289,6 @@ const showMachineStats = (machine: any) => {
 const showFileManage = (selectionData: any) => {
     state.fileDialog.machine = selectionData;
     state.fileDialog.visible = true;
-};
-
-/**
- * 处理文件配置选择事件
- */
-const onFileConfigSelect = (fileConfig: { fileId: number; path: string; name: string; type: number }) => {
-    const machine = state.fileDialog.machine;
-    if (!machine) return;
-
-    // 获取当前机器信息
-    const machineId = machine.id;
-    const authCertName = machine.selectAuthCert.name;
-
-    // 生成文件操作 tab 的 key
-    const fileTabKey = `file_${machineId}_${authCertName}_${fileConfig.fileId}`;
-
-    // 检查是否已经存在该文件操作 tab
-    if (state.tabs.has(fileTabKey)) {
-        // 如果已存在，直接切换到该 tab
-        state.activeTermName = fileTabKey;
-        return;
-    }
-
-    // 使用国际化前缀拼接 tab 标签
-    const labelName = `${t('machine.fileTabPrefix')}${machine.selectAuthCert.username}@${machine.name}/${fileConfig.name}`;
-
-    let tab = {
-        key: fileTabKey,
-        label: labelName.length > 25 ? labelName.slice(0, 18) + '...' + labelName.slice(-7) : labelName,
-        type: 'file',
-        machineId: machineId,
-        authCertName: authCertName,
-        protocol: machine.protocol,
-        fileId: fileConfig.fileId,
-        path: fileConfig.path,
-        params: machine,
-    };
-
-    state.tabs.set(fileTabKey, tab);
-    state.activeTermName = fileTabKey;
 };
 
 const showInfo = (info: any) => {
@@ -389,99 +307,48 @@ const showRec = (row: any) => {
     state.machineRecDialog.visible = true;
 };
 
-const onRemoveTab = (targetName: string) => {
-    let activeTermName = state.activeTermName;
-    const tabNames = [...state.tabs.keys()];
-    for (let i = 0; i < tabNames.length; i++) {
-        const tabName = tabNames[i];
-        if (tabName !== targetName) {
-            continue;
-        }
-
-        const tab = state.tabs.get(targetName);
-
-        // 只有终端类型才需要关闭连接
-        if (tab?.type === 'terminal') {
-            terminalRefs[targetName]?.close();
-        }
-
-        state.tabs.delete(targetName);
-
-        if (activeTermName != targetName) {
-            break;
-        }
-
-        // 如果删除的 tab 是当前激活的 tab，则切换到前一个或后一个 tab
-        const nextTab = tabNames[i + 1] || tabNames[i - 1];
-        if (nextTab) {
-            activeTermName = nextTab;
-        } else {
-            activeTermName = '';
-        }
-
-        state.activeTermName = activeTermName;
-        break;
-    }
-};
-
-const terminalStatusChange = (key: string, status: TerminalStatus) => {
-    state.tabs.get(key).status = status;
-};
-
-const terminalRefs: any = {};
-const setTerminalRef = (el: any, key: any) => {
-    if (key) {
-        terminalRefs[key] = el;
-    }
-};
-
-const fitTerminal = () => {
-    setTimeout(() => {
-        let info = state.tabs.get(state.activeTermName);
-        // 只有终端类型才需要调整大小
-        if (info && info.type === 'terminal') {
-            terminalRefs[info.key]?.fitTerminal && terminalRefs[info.key]?.fitTerminal();
-        }
-    });
-};
-
-const handleReconnect = (tab: any, force = false) => {
-    // 只有终端类型才需要重连
-    if (tab?.type === 'terminal') {
-        terminalRefs[tab.key]?.init();
-    }
-};
-
 defineExpose({
     openTerminal,
-    onResize: fitTerminal,
     showInfo,
     showProcess,
     showRec,
     showMachineStats,
     showFileManage,
     serviceManager,
+    // Terminal methods (from MachineTerminal)
+    init: handleReconnect,
+    onRefresh: handleReconnect,
+    close,
+    fitTerminal,
+    focus,
+    blur,
 });
 </script>
 
 <style lang="scss">
-.machine-terminal-tabs {
-    --el-tabs-header-height: 30px;
+.machine-op-manager {
+    height: 100%;
+}
 
-    .el-tabs {
-        --el-tabs-header-height: 30px;
-    }
+.machine-terminal-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
 
-    .machine-terminal-tab-label {
-        font-size: 12px;
-    }
+.terminal-header {
+    display: flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-bottom: 1px solid var(--el-border-color-light);
+    font-size: 12px;
+}
 
-    .el-tabs__header {
-        margin-bottom: 5px;
-    }
+.terminal-info-text {
+    cursor: pointer;
+}
 
-    .el-tabs__item {
-        padding: 0 8px !important;
-    }
+.terminal-body {
+    overflow: hidden;
 }
 </style>

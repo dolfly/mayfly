@@ -2,71 +2,71 @@
     <div class="redis-data-op h-full">
         <el-splitter>
             <el-splitter-panel size="35%" max="50%">
-                <div class="key-list-vtree h-full card !p-1">
-                    <el-scrollbar>
-                        <el-row :gutter="5">
-                            <el-col :span="2">
-                                <el-input v-model="state.keySeparator" :placeholder="$t('redis.delimiter')" size="small" />
-                            </el-col>
-                            <el-col :span="18">
-                                <el-input
-                                    @clear="clear"
-                                    v-model="scanParam.match"
-                                    @keyup.enter.native="searchKey()"
-                                    :placeholder="$t('redis.keyMatchTips')"
-                                    clearable
-                                    size="small"
-                                />
-                            </el-col>
-                            <el-col :span="4">
-                                <el-button
-                                    :disabled="!scanParam.id || !scanParam.db"
-                                    @click="searchKey()"
-                                    type="success"
-                                    icon="search"
-                                    size="small"
-                                    plain
-                                ></el-button>
-                            </el-col>
-                        </el-row>
+                <div class="key-list-vtree h-full card !p-1 flex flex-col">
+                    <el-row :gutter="5">
+                        <el-col :span="2">
+                            <el-input v-model="state.keySeparator" :placeholder="$t('redis.delimiter')" size="small" />
+                        </el-col>
+                        <el-col :span="18">
+                            <el-input
+                                @clear="clear"
+                                v-model="scanParam.match"
+                                @keyup.enter.native="searchKey()"
+                                :placeholder="$t('redis.keyMatchTips')"
+                                clearable
+                                size="small"
+                            />
+                        </el-col>
+                        <el-col :span="4">
+                            <el-button
+                                :disabled="!scanParam.id || !scanParam.db"
+                                @click="searchKey()"
+                                type="success"
+                                icon="search"
+                                size="small"
+                                plain
+                            ></el-button>
+                        </el-col>
+                    </el-row>
 
-                        <el-row :gutter="5" class="mb-1 mt-1">
-                            <el-col :span="19">
-                                <el-button :disabled="!scanParam.id || !scanParam.db" @click="scan(true)" type="success" icon="more" size="small" plain>
-                                    {{ $t('redis.loadMore') }}
-                                </el-button>
+                    <el-row :gutter="5" class="mb-1 mt-1">
+                        <el-col :span="19">
+                            <el-button :disabled="!scanParam.id || !scanParam.db" :loading="scanBtnLoading" @click="scan(true)" type="success" icon="more" size="small" plain>
+                                {{ $t('redis.loadMore') }}
+                            </el-button>
 
-                                <el-button
-                                    v-auth="'redis:data:save'"
-                                    :disabled="!scanParam.id || !scanParam.db"
-                                    @click="showNewKeyDialog"
-                                    type="primary"
-                                    icon="plus"
-                                    size="small"
-                                    plain
-                                    class="!ml-0.5"
-                                >
-                                    {{ $t('redis.addKey') }}
-                                </el-button>
+                            <el-button
+                                v-auth="'redis:data:save'"
+                                :disabled="!scanParam.id || !scanParam.db"
+                                @click="showNewKeyDialog"
+                                type="primary"
+                                icon="plus"
+                                size="small"
+                                plain
+                                class="!ml-0.5"
+                            >
+                                {{ $t('redis.addKey') }}
+                            </el-button>
 
-                                <el-button
-                                    :disabled="!scanParam.id || !scanParam.db"
-                                    @click="flushDb"
-                                    type="danger"
-                                    plain
-                                    v-auth="'redis:data:del'"
-                                    size="small"
-                                    icon="delete"
-                                    class="!ml-0.5"
-                                >
-                                    flush
-                                </el-button>
-                            </el-col>
-                            <el-col :span="5">
-                                <span class="mt-1" style="display: inline-block">keys:{{ state.dbsize }}</span>
-                            </el-col>
-                        </el-row>
+                            <el-button
+                                :disabled="!scanParam.id || !scanParam.db"
+                                @click="flushDb"
+                                type="danger"
+                                plain
+                                v-auth="'redis:data:del'"
+                                size="small"
+                                icon="delete"
+                                class="!ml-0.5"
+                            >
+                                flush
+                            </el-button>
+                        </el-col>
+                        <el-col :span="5">
+                            <span class="mt-1" style="display: inline-block">keys:{{ state.dbsize }}</span>
+                        </el-col>
+                    </el-row>
 
+                    <el-scrollbar class="flex-1 min-h-0" v-loading="state.loadingKeyTree">
                         <el-tree
                             ref="keyTreeRef"
                             :highlight-current="true"
@@ -153,6 +153,10 @@ const KeyDetail = defineAsyncComponent(() => import('../KeyDetail.vue'));
 
 const { t } = useI18n();
 
+const props = defineProps<{
+    tabKey?: string;
+}>();
+
 const emits = defineEmits(['init']);
 
 const keyFormRules = {
@@ -232,8 +236,10 @@ const state = reactive({
 const { scanParam, keyTreeData, newKeyDialog } = toRefs(state);
 
 onMounted(async () => {
-    emits('init', { name: RedisOpComp.name, ref: getCurrentInstance()?.exposed });
+    emits('init', { name: RedisOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
 });
+
+const scanBtnLoading = ref(false);
 
 const scan = async (appendKey = false) => {
     isTrue(state.scanParam.id != null, 'redis.redisSelectErr');
@@ -259,7 +265,11 @@ const scan = async (appendKey = false) => {
 
     try {
         state.loadingKeyTree = true;
-        const res = await redisApi.scan.request(scanParam);
+        scanBtnLoading.value = true;
+        const [res] = await Promise.all([
+            redisApi.scan.request(scanParam),
+            new Promise((r) => setTimeout(r, 100)),
+        ]);
         // 追加key，则将新key合并至原keys（加载更多）
         if (appendKey) {
             state.keys = [...state.keys, ...res.keys];
@@ -271,6 +281,7 @@ const scan = async (appendKey = false) => {
         state.scanParam.cursor = res.cursor;
     } finally {
         state.loadingKeyTree = false;
+        scanBtnLoading.value = false;
     }
 };
 
@@ -478,8 +489,17 @@ const onDbClick = async (dbInfo: any) => {
     scan();
 };
 
+// 刷新：重新扫描当前 db 的 keys
+const onRefresh = () => {
+    if (state.scanParam.id && state.scanParam.db != null) {
+        state.scanParam.cursor = {};
+        scan();
+    }
+};
+
 defineExpose({
     onDbClick,
+    onRefresh,
 });
 </script>
 

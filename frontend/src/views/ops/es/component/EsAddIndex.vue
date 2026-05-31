@@ -2,6 +2,7 @@
 
 <template>
     <el-drawer
+        :append-to-body="false"
         :title="t('es.addIndex')"
         v-model="visible"
         size="50%"
@@ -18,7 +19,7 @@
                     </el-form-item>
                     <el-space>
                         <el-form-item>
-                            <el-select v-model="formData.copyIdxName">
+                            <el-select v-model="formData.copyIdxName" style="width: 200px;" filterable>
                                 <el-option v-for="idx in idxNames" :key="idx" :value="idx" :label="idx" />
                             </el-select>
                         </el-form-item>

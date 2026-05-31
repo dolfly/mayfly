@@ -1,10 +1,10 @@
 <template>
-    <div class="kafka-consume-message h-full card !p-1">
-        <el-form ref="consumeFormRef" :model="form" label-width="auto" size="small">
+    <div class="kafka-consume-message h-full card !p-1 flex flex-col">
+        <el-form ref="consumeFormRef" :model="form" label-width="auto" size="small" class="flex-shrink-0">
             <el-row :gutter="10">
                 <el-col :span="10">
                     <el-form-item :label="$t('mq.kafka.selectTopic')" required>
-                        <el-select v-model="form.topic" filterable :placeholder="$t('mq.kafka.selectTopicPlaceholder')" clearable>
+                        <el-select v-model="form.topic" filterable :placeholder="$t('mq.kafka.selectTopicPlaceholder')" clearable :teleported="false">
                             <el-option v-for="topic in topics" :key="topic" :label="topic" :value="topic" />
                         </el-select>
                     </el-form-item>
@@ -16,7 +16,7 @@
                 </el-col>
                 <el-col :span="9">
                     <el-form-item :label="$t('mq.kafka.consumerGroup')">
-                        <el-select v-model="form.group" filterable :placeholder="$t('mq.kafka.consumerGroupPlaceholder')" clearable allow-create>
+                        <el-select v-model="form.group" filterable :placeholder="$t('mq.kafka.consumerGroupPlaceholder')" clearable allow-create :teleported="false">
                             <el-option label="(auto generate)" value="" />
                             <el-option v-for="g in groups" :key="g.Group" :label="g.Group" :value="g.Group" />
                         </el-select>
@@ -32,7 +32,7 @@
                 </el-col>
                 <el-col :span="5">
                     <el-form-item :label="$t('mq.kafka.decompression')">
-                        <el-select v-model="form.decompression" :placeholder="$t('mq.kafka.decompressionPlaceholder')" clearable>
+                        <el-select v-model="form.decompression" :placeholder="$t('mq.kafka.decompressionPlaceholder')" clearable :teleported="false">
                             <el-option label="none" value="" />
                             <el-option label="gzip" value="gzip" />
                             <el-option label="lz4" value="lz4" />
@@ -43,7 +43,7 @@
                 </el-col>
                 <el-col :span="5">
                     <el-form-item :label="$t('mq.kafka.decode')">
-                        <el-select v-model="form.decode" :placeholder="$t('mq.kafka.decodePlaceholder')" clearable>
+                        <el-select v-model="form.decode" :placeholder="$t('mq.kafka.decodePlaceholder')" clearable :teleported="false">
                             <el-option label="None" value="" />
                             <el-option label="Base64" value="base64" />
                         </el-select>
@@ -51,7 +51,7 @@
                 </el-col>
                 <el-col :span="5">
                     <el-form-item :label="$t('mq.kafka.isolationLevel')">
-                        <el-select v-model="form.isolationLevel" :placeholder="$t('mq.kafka.isolationLevelPlaceholder')">
+                        <el-select v-model="form.isolationLevel" :placeholder="$t('mq.kafka.isolationLevelPlaceholder')" :teleported="false">
                             <el-option :label="$t('mq.kafka.readUncommitted')" value="read_uncommitted" />
                             <el-option :label="$t('mq.kafka.readCommitted')" value="read_committed" />
                         </el-select>
@@ -66,14 +66,14 @@
                     </el-form-item>
                 </el-col>
                 <el-col :span="7">
-                    <el-tooltip :content="$t('mq.kafka.consumerOnlyTip')">
+                    <el-tooltip :content="$t('mq.kafka.consumerOnlyTip')" :teleported="false">
                         <el-form-item :label="$t('mq.kafka.defaultConsumePosition')">
                             <el-switch v-model="form.earliest" :active-text="$t('mq.kafka.earliest')" :inactive-text="$t('mq.kafka.latest')" />
                         </el-form-item>
                     </el-tooltip>
                 </el-col>
                 <el-col :span="8">
-                    <el-tooltip :content="$t('mq.kafka.consumerOnlyTip')">
+                    <el-tooltip :content="$t('mq.kafka.consumerOnlyTip')" :teleported="false">
                         <el-form-item :label="$t('mq.kafka.defaultConsumeStartTime')">
                             <el-date-picker
                                 v-model="form.startTime"
@@ -95,7 +95,7 @@
             </el-form-item>
         </el-form>
 
-        <el-table :data="messages" stripe style="width: 100%" v-loading="consuming" max-height="700">
+        <el-table :data="messages" stripe v-loading="consuming">
             <el-table-column prop="offset" :label="$t('mq.kafka.offset')" min-width="100" />
             <el-table-column prop="partition" :label="$t('mq.kafka.partition')" min-width="80" />
             <el-table-column prop="key" :label="$t('mq.kafka.key')" min-width="150" />
@@ -267,7 +267,12 @@ const getEditorLangByValue = (value: any) => {
 
 <style lang="scss" scoped>
 .kafka-consume-message {
-    overflow: auto;
+    overflow: hidden;
+
+    > .el-table {
+        flex: 1;
+        min-height: 0;
+    }
 
     .string-input-container-icon {
         color: var(--el-color-primary);

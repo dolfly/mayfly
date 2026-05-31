@@ -1,176 +1,172 @@
 <template>
-    <div class="db-table-data mt-1" :style="{ height: tableHeight }">
-        <el-auto-resizer>
-            <template #default="{ height, width }">
-                <el-table-v2
-                    ref="tableRef"
-                    :header-height="showColumnTip && dbConfig.showColumnComment ? 48 : 30"
-                    :row-height="30"
-                    :row-class="rowClass"
-                    :row-key="null"
-                    :columns="state.columns"
-                    :data="datas"
-                    :width="width"
-                    :height="height"
-                    fixed
-                    class="table"
-                    :row-event-handlers="rowEventHandlers"
-                    @scroll="onTableScroll"
-                >
-                    <template #header="{ columns }">
-                        <div v-for="(column, i) in columns" :key="i">
-                            <div
-                                :style="{
-                                    width: `${column.width}px`,
-                                    height: '100%',
-                                    textAlign: 'center',
-                                    borderRight: 'var(--el-table-border)',
-                                    borderTop: 'var(--el-table-border)',
-                                }"
-                            >
-                                <!-- 行号列 -->
-                                <div v-if="column.key == rowNoColumn.key" class="header-column-title">
-                                    <b class="el-text" tag="b"> {{ column.title }} </b>
-                                </div>
-
-                                <!-- 字段名列 -->
-                                <div v-else style="position: relative" @mouseenter="showColumnAction(column)" @mouseleave="hideColumnAction">
-                                    <!-- 字段列的数据类型 -->
-                                    <div class="column-type">
-                                        <span v-if="column.dataTypeSubscript === 'icon-clock'">
-                                            <SvgIcon :size="9" name="Clock" style="cursor: unset" />
-                                        </span>
-                                        <span class="text-[8px]!" v-else>{{ column.dataTypeSubscript }}</span>
-                                    </div>
-
-                                    <div v-if="showColumnTip">
-                                        <div class="header-column-title">
-                                            <b :title="column.remark" class="el-text cursor-pointer">
-                                                {{ column.title }}
-                                            </b>
-                                        </div>
-
-                                        <!-- 字段备注信息 -->
-                                        <div
-                                            v-if="dbConfig.showColumnComment"
-                                            style="color: var(--el-color-info-light-3)"
-                                            class="text-[10px]! el-text el-text--small is-truncated"
-                                        >
-                                            {{ column.columnComment }}
-                                        </div>
-                                    </div>
-
-                                    <div v-else class="header-column-title">
-                                        <b class="el-text"> {{ column.title }} </b>
-                                    </div>
-
-                                    <!-- 字段列右部分内容 -->
-                                    <div class="column-right">
-                                        <el-dropdown
-                                            @command="handleColumnCommand(column, $event)"
-                                            @visibleChange="onColumnActionVisibleChange(column, $event)"
-                                            trigger="click"
-                                            v-if="column.key !== rowNoColumn.key"
-                                            size="small"
-                                            placement="bottom-start"
-                                        >
-                                            <span class="column-actions-trigger">
-                                                <!-- 排序箭头图标 -->
-                                                <SvgIcon
-                                                    v-if="
-                                                        column.key == nowSortColumn?.key && !showColumnActions[column.key] && !columnActionVisible[column.key]
-                                                    "
-                                                    :color="'var(--el-color-primary)'"
-                                                    :name="nowSortColumn?.order == 'asc' ? 'top' : 'bottom'"
-                                                    :size="14"
-                                                />
-                                                <!-- 更多操作图标 -->
-                                                <SvgIcon
-                                                    v-if="columnActionVisible[column.key] || showColumnActions[column.key]"
-                                                    name="MoreFilled"
-                                                    :size="14"
-                                                    :color="'var(--el-color-primary)'"
-                                                    class="column-more-icon"
-                                                    :class="{ 'column-more-icon-visible': columnActionVisible[column.key] || showColumnActions[column.key] }"
-                                                />
-                                            </span>
-                                            <template #dropdown>
-                                                <el-dropdown-menu>
-                                                    <el-dropdown-item v-if="showColumnActionSort" command="sort-asc">
-                                                        <SvgIcon name="top" class="mr-1" />
-                                                        {{ $t('db.asc') }}
-                                                    </el-dropdown-item>
-                                                    <el-dropdown-item v-if="showColumnActionSort" command="sort-desc">
-                                                        <SvgIcon name="bottom" class="mr-1" />
-                                                        {{ $t('db.desc') }}
-                                                    </el-dropdown-item>
-                                                    <el-dropdown-item v-if="showColumnActionFixed && !column.fixed" command="fix">
-                                                        <SvgIcon name="Paperclip" class="mr-1" />
-                                                        {{ $t('db.fixed') }}
-                                                    </el-dropdown-item>
-                                                    <el-dropdown-item v-if="showColumnActionFixed && column.fixed" command="unfix">
-                                                        <SvgIcon name="Minus" class="mr-1" />
-                                                        {{ $t('db.cancelFiexd') }}
-                                                    </el-dropdown-item>
-                                                </el-dropdown-menu>
-                                            </template>
-                                        </el-dropdown>
-                                    </div>
-                                </div>
-                            </div>
+    <div ref="containerRef" class="db-table-data" :style="height ? { height } : {}">
+        <el-table-v2
+            ref="tableRef"
+            :header-height="showColumnTip && dbConfig.showColumnComment ? 48 : 30"
+            :row-height="30"
+            :row-class="rowClass"
+            :row-key="null"
+            :columns="state.columns"
+            :data="datas"
+            :width="state.containerWidth"
+            :height="state.containerHeight"
+            fixed
+            class="table"
+            :row-event-handlers="rowEventHandlers"
+            @scroll="onTableScroll"
+        >
+            <template #header="{ columns }">
+                <div v-for="(column, i) in columns" :key="i">
+                    <div
+                        :style="{
+                            width: `${column.width}px`,
+                            height: '100%',
+                            textAlign: 'center',
+                            borderRight: 'var(--el-table-border)',
+                            borderTop: 'var(--el-table-border)',
+                        }"
+                    >
+                        <!-- 行号列 -->
+                        <div v-if="column.key == rowNoColumn.key" class="header-column-title">
+                            <b class="el-text" tag="b"> {{ column.title }} </b>
                         </div>
-                    </template>
 
-                    <template #cell="{ rowData, column, rowIndex, columnIndex }">
-                        <div @contextmenu="dataContextmenuClick($event, rowIndex, column, rowData)" class="table-data-cell">
-                            <!-- 行号列 -->
-                            <div v-if="column.key == rowNoColumn.key">
-                                <b class="el-text el-text--small">
-                                    {{ (pageNum - 1) * pageSize + rowIndex + 1 }}
-                                </b>
+                        <!-- 字段名列 -->
+                        <div v-else style="position: relative" @mouseenter="showColumnAction(column)" @mouseleave="hideColumnAction">
+                            <!-- 字段列的数据类型 -->
+                            <div class="column-type">
+                                <span v-if="column.dataTypeSubscript === 'icon-clock'">
+                                    <SvgIcon :size="9" name="Clock" style="cursor: unset" />
+                                </span>
+                                <span class="text-[8px]!" v-else>{{ column.dataTypeSubscript }}</span>
                             </div>
 
-                            <!-- 数据列 -->
-                            <div v-else @dblclick="onEnterEditMode(rowData, column, rowIndex, columnIndex)">
-                                <div v-if="canEdit(rowIndex, columnIndex)">
-                                    <ColumnFormItem
-                                        v-model="rowData[column.key!]"
-                                        :data-type="column.dataType"
-                                        @blur="onExitEditMode(rowData, column, rowIndex)"
-                                        :column-name="column.columnName"
-                                        focus
-                                    />
+                            <div v-if="showColumnTip">
+                                <div class="header-column-title">
+                                    <b :title="column.remark" class="el-text cursor-pointer">
+                                        {{ column.title }}
+                                    </b>
                                 </div>
 
-                                <div v-else :class="isUpdated(rowIndex, column.key) ? 'update_field_active ml-0.5 mr-0.5' : 'ml-0.5 mr-0.5'">
-                                    <span v-if="rowData[column.key!] === null" style="color: var(--el-color-info-light-5)"> NULL </span>
+                                <!-- 字段备注信息 -->
+                                <div
+                                    v-if="dbConfig.showColumnComment"
+                                    style="color: var(--el-color-info-light-3)"
+                                    class="text-[10px]! el-text el-text--small is-truncated"
+                                >
+                                    {{ column.columnComment }}
+                                </div>
+                            </div>
 
-                                    <span v-else :title="rowData[column.key!]" class="el-text el-text--small is-truncated">
-                                        {{ rowData[column.key!] }}
+                            <div v-else class="header-column-title">
+                                <b class="el-text"> {{ column.title }} </b>
+                            </div>
+
+                            <!-- 字段列右部分内容 -->
+                            <div class="column-right">
+                                <el-dropdown
+                                    @command="handleColumnCommand(column, $event)"
+                                    @visibleChange="onColumnActionVisibleChange(column, $event)"
+                                    trigger="click"
+                                    v-if="column.key !== rowNoColumn.key"
+                                    size="small"
+                                    placement="bottom-start"
+                                >
+                                    <span class="column-actions-trigger">
+                                        <!-- 排序箭头图标 -->
+                                        <SvgIcon
+                                            v-if="
+                                                column.key == nowSortColumn?.key && !showColumnActions[column.key] && !columnActionVisible[column.key]
+                                            "
+                                            :color="'var(--el-color-primary)'"
+                                            :name="nowSortColumn?.order == 'asc' ? 'top' : 'bottom'"
+                                            :size="14"
+                                        />
+                                        <!-- 更多操作图标 -->
+                                        <SvgIcon
+                                            v-if="columnActionVisible[column.key] || showColumnActions[column.key]"
+                                            name="MoreFilled"
+                                            :size="14"
+                                            :color="'var(--el-color-primary)'"
+                                            class="column-more-icon"
+                                            :class="{ 'column-more-icon-visible': columnActionVisible[column.key] || showColumnActions[column.key] }"
+                                        />
                                     </span>
-                                </div>
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item v-if="showColumnActionSort" command="sort-asc">
+                                                <SvgIcon name="top" class="mr-1" />
+                                                {{ $t('db.asc') }}
+                                            </el-dropdown-item>
+                                            <el-dropdown-item v-if="showColumnActionSort" command="sort-desc">
+                                                <SvgIcon name="bottom" class="mr-1" />
+                                                {{ $t('db.desc') }}
+                                            </el-dropdown-item>
+                                            <el-dropdown-item v-if="showColumnActionFixed && !column.fixed" command="fix">
+                                                <SvgIcon name="Paperclip" class="mr-1" />
+                                                {{ $t('db.fixed') }}
+                                            </el-dropdown-item>
+                                            <el-dropdown-item v-if="showColumnActionFixed && column.fixed" command="unfix">
+                                                <SvgIcon name="Minus" class="mr-1" />
+                                                {{ $t('db.cancelFiexd') }}
+                                            </el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
                             </div>
                         </div>
-                    </template>
-
-                    <template v-if="state.loading" #overlay>
-                        <div class="el-loading-mask flex flex-col items-center justify-center">
-                            <div>
-                                <SvgIcon class="is-loading" name="loading" color="var(--el-color-primary)" :size="28" />
-                                <el-text class="ml-1" tag="b">{{ $t('db.execTime') }} - {{ state.execTime.toFixed(1) }}s</el-text>
-                            </div>
-                            <div v-if="loading && abortFn" class="mt-2!">
-                                <el-button @click="cancelLoading" type="info" size="small" plain>{{ $t('common.cancel') }}</el-button>
-                            </div>
-                        </div>
-                    </template>
-
-                    <template #empty>
-                        <el-empty class="text-center" :description="props.emptyText" :image-size="60" />
-                    </template>
-                </el-table-v2>
+                    </div>
+                </div>
             </template>
-        </el-auto-resizer>
+
+            <template #cell="{ rowData, column, rowIndex, columnIndex }">
+                <div @contextmenu="dataContextmenuClick($event, rowIndex, column, rowData)" class="table-data-cell">
+                    <!-- 行号列 -->
+                    <div v-if="column.key == rowNoColumn.key">
+                        <b class="el-text el-text--small">
+                            {{ (pageNum - 1) * pageSize + rowIndex + 1 }}
+                        </b>
+                    </div>
+
+                    <!-- 数据列 -->
+                    <div v-else @dblclick="onEnterEditMode(rowData, column, rowIndex, columnIndex)">
+                        <div v-if="canEdit(rowIndex, columnIndex)">
+                            <ColumnFormItem
+                                v-model="rowData[column.key!]"
+                                :data-type="column.dataType"
+                                @blur="onExitEditMode(rowData, column, rowIndex)"
+                                :column-name="column.columnName"
+                                focus
+                            />
+                        </div>
+
+                        <div v-else :class="isUpdated(rowIndex, column.key) ? 'update_field_active ml-0.5 mr-0.5' : 'ml-0.5 mr-0.5'">
+                            <span v-if="rowData[column.key!] === null" style="color: var(--el-color-info-light-5)"> NULL </span>
+
+                            <span v-else :title="rowData[column.key!]" class="el-text el-text--small is-truncated">
+                                {{ rowData[column.key!] }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <template v-if="state.loading" #overlay>
+                <div class="el-loading-mask flex flex-col items-center justify-center">
+                    <div>
+                        <SvgIcon class="is-loading" name="loading" color="var(--el-color-primary)" :size="28" />
+                        <el-text class="ml-1" tag="b">{{ $t('db.execTime') }} - {{ state.execTime.toFixed(1) }}s</el-text>
+                    </div>
+                    <div v-if="loading && abortFn" class="mt-2!">
+                        <el-button @click="cancelLoading" type="info" size="small" plain>{{ $t('common.cancel') }}</el-button>
+                    </div>
+                </div>
+            </template>
+
+            <template #empty>
+                <el-empty class="text-center" :description="props.emptyText" :image-size="60" />
+            </template>
+        </el-table-v2>
 
         <el-dialog @close="state.genTxtDialog.visible = false" v-model="state.genTxtDialog.visible" :title="state.genTxtDialog.title" width="1000px">
             <template #header>
@@ -208,7 +204,7 @@ import SvgIcon from '@/components/svgIcon/index.vue';
 import { DbInst, DbThemeConfig } from '@/views/ops/db/db';
 import { useIntervalFn, useStorage } from '@vueuse/core';
 import { ElInput } from 'element-plus';
-import { Ref, computed, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue';
+import { Ref, computed, onBeforeUnmount, onMounted, reactive, ref, toRefs, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Msg } from '../../../../../hooks/useI18n';
 import { ColumnTypeSubscript, DataType, DbDialect, getDbDialect } from '../../dialect/index';
@@ -259,7 +255,7 @@ const props = defineProps({
     },
     height: {
         type: String,
-        default: '600px',
+        default: '',
     },
     pageSize: {
         type: Number,
@@ -273,6 +269,8 @@ const props = defineProps({
 
 const contextmenuRef = ref();
 const tableRef = ref();
+const containerRef = useTemplateRef<HTMLElement>('containerRef');
+let resizeObserver: ResizeObserver | null = null;
 
 // 用于控制列操作按钮的显示
 const showColumnActions = ref({} as any);
@@ -387,6 +385,8 @@ const state = reactive({
     columns: [] as any,
     loading: false,
     tableHeight: '600px',
+    containerHeight: 600,
+    containerWidth: 800,
     execTime: 0,
     contextmenu: {
         dropdown: {
@@ -407,7 +407,7 @@ const state = reactive({
     },
 });
 
-const { tableHeight, datas } = toRefs(state);
+const { containerHeight, containerWidth, datas } = toRefs(state);
 
 const dbConfig = useStorage('dbConfig', DbThemeConfig);
 
@@ -487,6 +487,22 @@ onMounted(async () => {
     state.tableHeight = props.height;
     state.loading = props.loading;
 
+    // 使用 ResizeObserver 自动测量容器尺寸，确保 el-table-v2 固定表头 + body滚动
+    if (containerRef.value) {
+        const rect = containerRef.value.getBoundingClientRect();
+        state.containerHeight = rect.height || 600;
+        state.containerWidth = rect.width || 800;
+
+        resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const { height, width } = entry.contentRect;
+                if (height > 0) state.containerHeight = height;
+                if (width > 0) state.containerWidth = width;
+            }
+        });
+        resizeObserver.observe(containerRef.value);
+    }
+
     state.dbId = props.dbId;
     state.dbType = getNowDbInst().type;
     dbDialect = getDbDialect(state.dbType);
@@ -502,6 +518,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
     endLoading();
+    resizeObserver?.disconnect();
 });
 
 const setTableData = (datas: any) => {

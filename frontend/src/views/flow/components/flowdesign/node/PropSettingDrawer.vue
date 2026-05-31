@@ -1,5 +1,6 @@
 <template>
     <el-drawer
+        :append-to-body="false"
         body-class="!pt-2"
         header-class="!mb-2"
         :title="title"

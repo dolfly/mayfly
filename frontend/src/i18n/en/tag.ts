@@ -16,9 +16,12 @@ export default {
         rootTag: 'Root Tag',
         selectTagPlaceholder: 'Select the associated tag',
         machineOp: 'Machine Operation',
+        machineTerminal: 'Machine Terminal',
+        machineFile: 'Machine File',
         dbDataOp: 'Db Operation',
         redisDataOp: 'Redis Operation',
         esDataOp: 'Es Operation',
+        esIndexData: 'ES Index Data',
         mongoDataOp: 'Mongo Operation',
         allResource: 'All Resource',
         mq: {

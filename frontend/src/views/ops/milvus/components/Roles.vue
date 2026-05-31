@@ -1,8 +1,11 @@
 <template>
-    <el-button size="small" icon="plus" type="primary" @click="handleCreate">{{ $t('milvus.createRole') }}</el-button>
-    <el-button size="small" text icon="refresh" @click="loadList" :loading="loading" />
+    <div class="component-container">
+        <div>
+            <el-button size="small" icon="plus" type="primary" @click="handleCreate">{{ $t('milvus.createRole') }}</el-button>
+            <el-button size="small" text icon="refresh" @click="loadList" :loading="loading" />
+        </div>
 
-    <el-table :data="list">
+        <el-table :data="list">
         <el-table-column prop="roleName" :label="$t('milvus.roleName')" />
         <el-table-column :label="$t('common.operation')" width="250">
             <template #default="{ row }">
@@ -12,7 +15,8 @@
                 <el-button size="small" type="danger" @click="handleDrop(row)">{{ $t('common.delete') }}</el-button>
             </template>
         </el-table-column>
-    </el-table>
+        </el-table>
+    </div>
 
     <!-- 创建角色弹窗 -->
     <el-dialog v-model="createDialog.visible" :title="$t('milvus.createRole')" width="500px">
@@ -40,11 +44,12 @@ import { onMounted, ref, watch } from 'vue';
 import { milvusApi } from '../api';
 import RolesGrantPrivilege from './RolesGrantPrivilege.vue';
 
-const milvusStore = useMilvusStore();
-
 const props = defineProps<{
     milvusId: number;
+    tabKey?: string;
 }>();
+
+const milvusStore = useMilvusStore(props.tabKey || 'milvusStore');
 
 const list = ref<any[]>([]);
 const createDialog = ref({
@@ -120,3 +125,17 @@ watch(
     }
 );
 </script>
+
+<style scoped>
+.component-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.component-container :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+}
+</style>

@@ -1,5 +1,6 @@
 <template>
     <el-drawer
+        :append-to-body="false"
         size="50%"
         :destroy-on-close="false"
         :close-on-click-modal="false"
@@ -53,6 +54,7 @@
     </el-drawer>
 
     <el-drawer
+        :append-to-body="false"
         size="50%"
         :destroy-on-close="true"
         :close-on-click-modal="false"

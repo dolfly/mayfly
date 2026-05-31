@@ -42,6 +42,7 @@
         </el-dialog>
 
         <el-drawer
+            :append-to-body="false"
             resizable
             destroy-on-close
             :title="fileDialog.title"
@@ -74,7 +75,7 @@
 <script lang="ts" setup>
 import EnumSelect from '@/components/enumselect/EnumSelect.vue';
 import { Msg, useI18nDeleteConfirm } from '@/hooks/useI18n';
-import { defineAsyncComponent, reactive, toRefs, watch } from 'vue';
+import {defineAsyncComponent, onMounted, reactive, toRefs, watch} from 'vue';
 import { machineApi } from '../api';
 import { FileTypeEnum } from '../enums';
 
@@ -137,8 +138,11 @@ watch(props, async (newValue) => {
 
 const getFiles = async () => {
     try {
-        state.loading = true;
         state.query.id = props.machineId as any;
+        if (!state.query.id){
+            return
+        }
+        state.loading = true;
         const res = await files.request(state.query);
         state.fileTable = res.list || [];
         state.total = res.total;
@@ -146,6 +150,8 @@ const getFiles = async () => {
         state.loading = false;
     }
 };
+
+onMounted(getFiles)
 
 const handlePageChange = (curPage: number) => {
     state.query.pageNum = curPage;

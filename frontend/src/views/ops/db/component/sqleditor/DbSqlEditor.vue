@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <div>
+    <div class="h-full flex flex-col">
+        <div class="flex-shrink-0">
             <div class="card p-1! flex items-center justify-between">
                 <div>
                     <el-link @click="onRunSql()" underline="never" class="ml-3.5" icon="VideoPlay"> </el-link>
@@ -40,7 +40,7 @@
             </div>
         </div>
 
-        <el-splitter style="height: calc(100vh - 220px)" layout="vertical" @resize-end="onResizeTableHeight">
+        <el-splitter ref="splitterRef" class="flex-1 min-h-0" layout="vertical" @resize-end="onResizeTableHeight">
             <el-splitter-panel :size="state.editorSize" max="80%">
                 <MonacoEditor ref="monacoEditorRef" class="mt-1" v-model="state.sql" language="sql" height="100%" :id="'MonacoTextarea-' + getKey()" />
             </el-splitter-panel>
@@ -56,7 +56,7 @@
                     >
                         <el-tab-pane class="h-full!" closable v-for="dt in state.execResTabs" :label="dt.id" :name="dt.id" :key="dt.id">
                             <template #label>
-                                <el-popover :show-after="1000" placement="top-start" :title="$t('db.execInfo')" trigger="hover" :width="300">
+                                <el-popover :show-after="1000" placement="top-start" :title="$t('db.execInfo')" trigger="hover" :width="300" :teleported="false">
                                     <template #reference>
                                         <div>
                                             <span>
@@ -135,7 +135,7 @@ import config from '@/common/config';
 import { getToken } from '@/common/utils/storage';
 import { ElMessageBox } from 'element-plus';
 import { format as sqlFormatter } from 'sql-formatter';
-import { nextTick, onMounted, reactive, ref, toRefs, unref } from 'vue';
+import { nextTick, onMounted, reactive, ref, toRefs, unref, useTemplateRef } from 'vue';
 
 import { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
@@ -276,13 +276,17 @@ const onRemoveTab = (targetId: number) => {
     }
 };
 
+const splitterRef = useTemplateRef<HTMLElement>('splitterRef');
+
 const onResizeTableHeight = (index: number, sizes: number[]) => {
     if (!sizes || sizes.length === 0) {
         return;
     }
 
-    const vh = window.innerHeight;
-    const plitpaneHeight = vh - 200;
+    // 基于splitter容器实际高度计算，兼容全屏模式
+    const splitterEl = splitterRef.value?.$el || splitterRef.value;
+    const containerHeight = splitterEl ? (splitterEl as HTMLElement).getBoundingClientRect().height : window.innerHeight - 220;
+    const plitpaneHeight = containerHeight - 10;
 
     let editorHeight = sizes[0];
     if (editorHeight < 0 || editorHeight > plitpaneHeight - 43) {

@@ -29,6 +29,8 @@ export default {
         indexStats: '统计信息',
         opViewColumns: '设置显示字段',
         opIndex: '索引管理',
+        opDataManage: '数据管理',
+        selectIndexFirst: '请先选择索引',
         opSearch: '搜索',
         searchParamsPreview: '搜索条件预览',
         opBasicSearch: '基础搜索',

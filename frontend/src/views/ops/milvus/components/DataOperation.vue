@@ -1,187 +1,189 @@
 <template>
-    <!-- 顶部查询工具栏 -->
-    <el-space>
-        <el-button size="small" type="primary" @click="() => handleQuery()" :loading="queryLoading" icon="search">
-            {{ $t('milvus.query') }}
-        </el-button>
+    <div ref="tableContainerRef" style="height: 100%">
+        <!-- 顶部查询工具栏 -->
+        <el-space>
+            <el-button size="small" type="primary" @click="() => handleQuery()" :loading="queryLoading" icon="search">
+                {{ $t('milvus.query') }}
+            </el-button>
 
-        <el-button size="small" text @click="handleReset" icon="refresh" :disabled="queryLoading">
-            {{ $t('milvus.reset') }}
-        </el-button>
+            <el-button size="small" text @click="handleReset" icon="refresh" :disabled="queryLoading">
+                {{ $t('milvus.reset') }}
+            </el-button>
 
-        <el-tooltip content="collection" placement="top">
-            <el-select size="small" v-model="selectedCollection" style="min-width: 200px" filterable clearable>
-                <el-option v-for="item in collections" :key="item" :label="item" :value="item" />
+            <el-tooltip content="collection" placement="top" :teleported="false">
+                <el-select size="small" v-model="selectedCollection" style="min-width: 200px" filterable clearable :teleported="false">
+                    <el-option v-for="item in collections" :key="item" :label="item" :value="item" />
+                </el-select>
+            </el-tooltip>
+
+            <el-input
+                size="small"
+                style="min-width: 180px"
+                v-model="queryExpr"
+                :placeholder="$t('milvus.queryExpr') + $t('milvus.queryExprPlaceholder')"
+                clearable
+                @keyup.enter="() => handleQuery()"
+            >
+            </el-input>
+
+            <el-tooltip :content="$t('milvus.consistencyLevel')" placement="top" :teleported="false">
+                <el-select size="small" v-model="consistencyLevel" style="width: 130px" :teleported="false">
+                    <el-option label="Strong" :value="0" />
+                    <el-option label="Session" :value="1" />
+                    <el-option label="Bounded" :value="2" />
+                    <el-option label="Eventually" :value="3" />
+                    <el-option label="Customized" :value="4" />
+                </el-select>
+            </el-tooltip>
+
+            <el-select size="small" v-model="selectedPartition" :placeholder="$t('milvus.partitionManagement')" style="width: 120px" clearable :teleported="false">
+                <el-option size="small" :label="$t('milvus.allPartitions')" value="" />
+                <el-option size="small" v-for="partition in partitions" :key="partition" :label="partition" :value="partition" />
             </el-select>
-        </el-tooltip>
 
-        <el-input
-            size="small"
-            style="min-width: 180px"
-            v-model="queryExpr"
-            :placeholder="$t('milvus.queryExpr') + $t('milvus.queryExprPlaceholder')"
-            clearable
-            @keyup.enter="() => handleQuery()"
-        >
-        </el-input>
-
-        <el-tooltip :content="$t('milvus.consistencyLevel')" placement="top">
-            <el-select size="small" v-model="consistencyLevel" style="width: 130px">
-                <el-option label="Strong" :value="0" />
-                <el-option label="Session" :value="1" />
-                <el-option label="Bounded" :value="2" />
-                <el-option label="Eventually" :value="3" />
-                <el-option label="Customized" :value="4" />
-            </el-select>
-        </el-tooltip>
-
-        <el-select size="small" v-model="selectedPartition" :placeholder="$t('milvus.partitionManagement')" style="width: 120px" clearable>
-            <el-option size="small" :label="$t('milvus.allPartitions')" value="" />
-            <el-option size="small" v-for="partition in partitions" :key="partition" :label="partition" :value="partition" />
-        </el-select>
-
-        <el-dropdown size="small" trigger="click">
-            <el-button size="small" text icon="grid"> {{ $t('milvus.outputFields') }} ({{ selectedFields.length }}/{{ collectionFields.length }}) </el-button>
-            <template #dropdown>
-                <el-dropdown-menu class="fields-dropdown-menu">
-                    <div class="fields-dropdown-header">
-                        <el-checkbox
-                            :model-value="selectedFields.length === collectionFields.length && collectionFields.length > 0"
-                            :indeterminate="selectedFields.length > 0 && selectedFields.length < collectionFields.length"
-                            @change="handleSelectAll"
-                        >
-                            {{ $t('milvus.outputFields') }}
-                        </el-checkbox>
-                    </div>
-                    <div class="fields-dropdown-list">
-                        <div v-for="field in collectionFields" :key="field" class="field-item" @click="toggleField(field)">
-                            <el-checkbox :model-value="selectedFields.includes(field)">
-                                <span class="field-label">
-                                    <el-icon v-if="isPrimaryKey(field)" class="field-icon primary">
-                                        <Key />
-                                    </el-icon>
-                                    <el-icon v-else-if="isVectorField(field)" class="field-icon vector">
-                                        <DataAnalysis />
-                                    </el-icon>
-                                    <el-icon v-else-if="isDynamicField(field)" class="field-icon dynamic">
-                                        <InfoFilled />
-                                    </el-icon>
-                                    <el-icon v-else class="field-icon normal">
-                                        <Grid />
-                                    </el-icon>
-                                    {{ field }}
-                                </span>
+            <el-dropdown size="small" trigger="click" :teleported="false">
+                <el-button size="small" text icon="grid"> {{ $t('milvus.outputFields') }} ({{ selectedFields.length }}/{{ collectionFields.length }}) </el-button>
+                <template #dropdown>
+                    <el-dropdown-menu class="fields-dropdown-menu">
+                        <div class="fields-dropdown-header">
+                            <el-checkbox
+                                :model-value="selectedFields.length === collectionFields.length && collectionFields.length > 0"
+                                :indeterminate="selectedFields.length > 0 && selectedFields.length < collectionFields.length"
+                                @change="handleSelectAll"
+                            >
+                                {{ $t('milvus.outputFields') }}
                             </el-checkbox>
                         </div>
-                    </div>
-                </el-dropdown-menu>
-            </template>
-        </el-dropdown>
-    </el-space>
+                        <div class="fields-dropdown-list">
+                            <div v-for="field in collectionFields" :key="field" class="field-item" @click="toggleField(field)">
+                                <el-checkbox :model-value="selectedFields.includes(field)">
+                                    <span class="field-label">
+                                        <el-icon v-if="isPrimaryKey(field)" class="field-icon primary">
+                                            <Key />
+                                        </el-icon>
+                                        <el-icon v-else-if="isVectorField(field)" class="field-icon vector">
+                                            <DataAnalysis />
+                                        </el-icon>
+                                        <el-icon v-else-if="isDynamicField(field)" class="field-icon dynamic">
+                                            <InfoFilled />
+                                        </el-icon>
+                                        <el-icon v-else class="field-icon normal">
+                                            <Grid />
+                                        </el-icon>
+                                        {{ field }}
+                                    </span>
+                                </el-checkbox>
+                            </div>
+                        </div>
+                    </el-dropdown-menu>
+                </template>
+            </el-dropdown>
+        </el-space>
 
-    <!-- 操作工具栏 -->
-    <el-space style="padding: 5px 0">
-        <el-button text size="small" icon="upload" @click="handleImportFile">
-            {{ $t('milvus.importFile') }}
-        </el-button>
-        <el-button text size="small" icon="plus" @click="handleInsertSample">
-            {{ $t('milvus.insertSampleData') }}
-        </el-button>
-        <el-button text size="small" icon="delete" @click="handleClearData" :disabled="queryResults.length === 0">
-            {{ $t('milvus.clearData') }}
-        </el-button>
-        <el-button text size="small" icon="edit" @click="handleEditData" :disabled="selectedRows.length === 0">
-            {{ $t('common.edit') }}
-        </el-button>
-        <el-button text size="small" icon="download" :disabled="queryResults.length === 0"> {{ $t('milvus.export') }} ({{ selectedRows.length }}) </el-button>
-        <el-button text size="small" icon="document-copy" :disabled="selectedRows.length === 0" @click="handleCopySelected">
-            {{ $t('common.copy') }} JSON
-        </el-button>
-        <el-button text size="small" icon="delete" :disabled="selectedRows.length === 0" @click="handleDeleteSelected">
-            {{ $t('common.delete') }}
-        </el-button>
-    </el-space>
+        <!-- 操作工具栏 -->
+        <el-space style="padding: 5px 0">
+            <el-button text size="small" icon="upload" @click="handleImportFile">
+                {{ $t('milvus.importFile') }}
+            </el-button>
+            <el-button text size="small" icon="plus" @click="handleInsertSample">
+                {{ $t('milvus.insertSampleData') }}
+            </el-button>
+            <el-button text size="small" icon="delete" @click="handleClearData" :disabled="queryResults.length === 0">
+                {{ $t('milvus.clearData') }}
+            </el-button>
+            <el-button text size="small" icon="edit" @click="handleEditData" :disabled="selectedRows.length === 0">
+                {{ $t('common.edit') }}
+            </el-button>
+            <el-button text size="small" icon="download" :disabled="queryResults.length === 0"> {{ $t('milvus.export') }} ({{ selectedRows.length }}) </el-button>
+            <el-button text size="small" icon="document-copy" :disabled="selectedRows.length === 0" @click="handleCopySelected">
+                {{ $t('common.copy') }} JSON
+            </el-button>
+            <el-button text size="small" icon="delete" :disabled="selectedRows.length === 0" @click="handleDeleteSelected">
+                {{ $t('common.delete') }}
+            </el-button>
+        </el-space>
 
-    <el-table
-        v-loading="queryLoading"
-        :data="queryResults"
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-        border
-        stripe
-        height="calc(100vh - 288px)"
-        :loading="queryLoading"
-    >
-        <el-table-column type="selection" width="55" />
+        <el-table
+            v-loading="queryLoading"
+            :data="queryResults"
+            style="width: 100%"
+            @selection-change="handleSelectionChange"
+            border
+            stripe
+            :loading="queryLoading"
+            :height="tableHeight"
+        >
+            <el-table-column type="selection" width="55" />
 
-        <el-table-column v-for="field in displayFields" :key="field" :label="field" :min-width="getMinWidth(field)">
-            <template #header>
-                <span class="field-label">
-                    <el-icon v-if="isPrimaryKey(field)" title="Primary Key">
-                        <Key />
-                    </el-icon>
-                    <el-icon v-else-if="isVectorField(field)" title="Vector Field">
-                        <DataAnalysis />
-                    </el-icon>
-                    <el-icon v-else-if="isDynamicField(field)" title="Dynamic Fields">
-                        <InfoFilled />
-                    </el-icon>
-                    <el-icon v-else>
-                        <Grid />
-                    </el-icon>
-                    {{ getDisplayLabel(field) }}
-                </span>
-            </template>
-            <template #default="{ row }">
-                <div class="cell-content">
-                    <div
-                        class="cell-value"
-                        :class="{ 'url-link': isUrl(row[field]), 'vector-cell': isVectorField(field) }"
-                        :title="formatCellValue(row[field], field)"
-                        @click="handleCellClick(row[field], field)"
-                    >
-                        {{ formatCellValue(row[field], field) }}
-                    </div>
-                    <div class="cell-actions">
-                        <el-icon class="copy-icon" @click.stop="copyToClipboard(row[field], field)">
-                            <DocumentCopy />
+            <el-table-column v-for="field in displayFields" :key="field" :label="field" :min-width="getMinWidth(field)">
+                <template #header>
+                    <span class="field-label">
+                        <el-icon v-if="isPrimaryKey(field)" title="Primary Key">
+                            <Key />
                         </el-icon>
+                        <el-icon v-else-if="isVectorField(field)" title="Vector Field">
+                            <DataAnalysis />
+                        </el-icon>
+                        <el-icon v-else-if="isDynamicField(field)" title="Dynamic Fields">
+                            <InfoFilled />
+                        </el-icon>
+                        <el-icon v-else>
+                            <Grid />
+                        </el-icon>
+                        {{ getDisplayLabel(field) }}
+                    </span>
+                </template>
+                <template #default="{ row }">
+                    <div class="cell-content">
+                        <div
+                            class="cell-value"
+                            :class="{ 'url-link': isUrl(row[field]), 'vector-cell': isVectorField(field) }"
+                            :title="formatCellValue(row[field], field)"
+                            @click="handleCellClick(row[field], field)"
+                        >
+                            {{ formatCellValue(row[field], field) }}
+                        </div>
+                        <div class="cell-actions">
+                            <el-icon class="copy-icon" @click.stop="copyToClipboard(row[field], field)">
+                                <DocumentCopy />
+                            </el-icon>
+                        </div>
                     </div>
-                </div>
-            </template>
-        </el-table-column>
-    </el-table>
+                </template>
+            </el-table-column>
+        </el-table>
 
-    <!-- 分页控件 -->
-    <div class="pagination-container">
-        <div class="pagination-info">
-            <span>{{ $t('milvus.paginationInfo', { total: totalRecords, current: currentPage, pages: totalPages }) }}</span>
-            <el-select size="small" v-model="pageSize" @change="handlePageSizeChange" style="width: 110px; margin-left: 12px">
-                <el-option size="small" :label="$t('milvus.pageSize10')" :value="10" />
-                <el-option size="small" :label="$t('milvus.pageSize20')" :value="20" />
-                <el-option size="small" :label="$t('milvus.pageSize50')" :value="50" />
-                <el-option size="small" :label="$t('milvus.pageSize100')" :value="100" />
-            </el-select>
-        </div>
-        <div class="pagination-controls">
-            <el-button text :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)" icon="ArrowLeft" size="small">
-                {{ $t('milvus.prevPage') }}
-            </el-button>
-            <div class="pagination-jump">
-                <span>{{ $t('milvus.jumpTo') }}</span>
-                <el-input-number
-                    v-model="jumpPage"
-                    :min="1"
-                    :max="totalPages || 999999"
-                    size="small"
-                    style="width: 80px"
-                    @change="handleJumpPage"
-                    @keyup.enter="handleJumpPage"
-                />
+        <!-- 分页控件 -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                <span>{{ $t('milvus.paginationInfo', { total: totalRecords, current: currentPage, pages: totalPages }) }}</span>
+                <el-select size="small" v-model="pageSize" @change="handlePageSizeChange" style="width: 110px; margin-left: 12px" :teleported="false">
+                    <el-option size="small" :label="$t('milvus.pageSize10')" :value="10" />
+                    <el-option size="small" :label="$t('milvus.pageSize20')" :value="20" />
+                    <el-option size="small" :label="$t('milvus.pageSize50')" :value="50" />
+                    <el-option size="small" :label="$t('milvus.pageSize100')" :value="100" />
+                </el-select>
             </div>
-            <el-button text :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)" icon="ArrowRight" size="small">
-                {{ $t('milvus.nextPage') }}
-            </el-button>
+            <div class="pagination-controls">
+                <el-button text :disabled="currentPage <= 1" @click="handlePageChange(currentPage - 1)" icon="ArrowLeft" size="small">
+                    {{ $t('milvus.prevPage') }}
+                </el-button>
+                <div class="pagination-jump">
+                    <span>{{ $t('milvus.jumpTo') }}</span>
+                    <el-input-number
+                        v-model="jumpPage"
+                        :min="1"
+                        :max="totalPages || 999999"
+                        size="small"
+                        style="width: 80px"
+                        @change="handleJumpPage"
+                        @keyup.enter="handleJumpPage"
+                    />
+                </div>
+                <el-button text :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)" icon="ArrowRight" size="small">
+                    {{ $t('milvus.nextPage') }}
+                </el-button>
+            </div>
         </div>
     </div>
 
@@ -201,7 +203,7 @@
             <!-- 分区选择 -->
             <div class="import-field">
                 <label class="field-label">{{ $t('milvus.partition') }}</label>
-                <el-select v-model="selectedPartitionForImport" style="width: 100%">
+                <el-select v-model="selectedPartitionForImport" style="width: 100%" :teleported="false">
                     <el-option v-for="partition in partitions" :key="partition" :label="partition" :value="partition" />
                 </el-select>
             </div>
@@ -256,21 +258,51 @@ import MonacoEditorBox from '@/components/monaco/MonacoEditorBox';
 import { Msg } from '@/hooks/useI18n';
 import { useMilvusStore } from '@/views/ops/milvus/resource/store';
 import { DataAnalysis, DocumentCopy, Grid, InfoFilled, Key } from '@element-plus/icons-vue';
-import { useClipboard } from '@vueuse/core';
+import { useClipboard, useResizeObserver } from '@vueuse/core';
 import { ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { milvusApi } from '../api';
 
+// 表格动态高度（仅 body 滚动，表头固定）
+const tableContainerRef = ref<HTMLElement>();
+const tableHeight = ref(300);
+let resizeObserver: ReturnType<typeof useResizeObserver> | undefined;
+
+const calcTableHeight = () => {
+    if (!tableContainerRef.value) return;
+    const table = tableContainerRef.value.querySelector('.el-table');
+    if (!table) return;
+    const containerRect = tableContainerRef.value.getBoundingClientRect();
+    const tableRect = table.getBoundingClientRect();
+    const offset = tableRect.top - containerRect.top;
+    const paginationEl = tableContainerRef.value.querySelector('.pagination-container') as HTMLElement;
+    const paginationH = paginationEl ? paginationEl.offsetHeight + 15 : 0;
+    const newHeight = containerRect.height - offset - paginationH;
+    if (newHeight > 100) tableHeight.value = newHeight;
+};
+
+onMounted(() => {
+    resizeObserver = useResizeObserver(tableContainerRef, () => {
+        nextTick(calcTableHeight);
+    });
+});
+
+onBeforeUnmount(() => {
+    resizeObserver?.stop();
+});
+
 const { t } = useI18n();
 const { copy } = useClipboard();
-const milvusStore = useMilvusStore();
-const { collections, selectedCollection } = storeToRefs(milvusStore);
 
 const props = defineProps<{
     milvusId: number;
+    tabKey?: string;
 }>();
+
+const milvusStore = useMilvusStore(props.tabKey || 'milvusStore');
+const { collections, selectedCollection } = storeToRefs(milvusStore);
 
 // 查询状态
 const queryLoading = ref(false);

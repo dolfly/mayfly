@@ -1,5 +1,5 @@
 <template>
-    <div class="mongo-data-tab card h-full !p-1 w-full">
+    <div class="mongo-data-tab card h-full !p-1 w-full flex flex-col">
         <el-row v-if="nowColl">
             <el-descriptions class="!w-full" :column="10" size="small" border>
                 <!-- <el-descriptions-item label-align="right" label="tag">xxx</el-descriptions-item> -->
@@ -28,8 +28,8 @@
             </el-descriptions>
         </el-row>
 
-        <el-row type="flex">
-            <el-tabs @tab-remove="removeDataTab" class="!w-full ml-1" v-model="state.activeName">
+        <el-row type="flex" class="flex-1 min-h-0">
+            <el-tabs @tab-remove="removeDataTab" class="!w-full ml-1 h-full flex flex-col" v-model="state.activeName">
                 <el-tab-pane closable v-for="dt in state.dataTabs" :key="dt.key" :label="dt.label" :name="dt.key">
                     <el-row>
                         <el-col :span="2">
@@ -50,7 +50,7 @@
                             </el-input>
                         </el-col>
                     </el-row>
-                    <el-scrollbar class="mongo-data-tab-data">
+                    <el-scrollbar class="mongo-data-tab-data flex-1 min-h-0" v-loading="findLoading">
                         <el-row>
                             <el-col :span="6" v-for="item in dt.datas" :key="item">
                                 <el-card :body-style="{ padding: '0px', position: 'relative' }">
@@ -61,7 +61,7 @@
 
                                             <el-divider direction="vertical" border-style="dashed" />
 
-                                            <el-popconfirm @confirm="onDeleteDoc(item.value)" :title="$t('mongo.deleteDocConfirm')" width="160">
+                                            <el-popconfirm @confirm="onDeleteDoc(item.value)" :title="$t('mongo.deleteDocConfirm')" width="160" :teleported="false">
                                                 <template #reference>
                                                     <el-link v-auth="perms.delData" underline="never" type="danger" icon="DocumentDelete"> </el-link>
                                                 </template>
@@ -138,6 +138,10 @@ const perms = {
 
 const resourceOpCtx: ResourceOpCtx | undefined = inject(ResourceOpCtxKey);
 
+const props = defineProps<{
+    tabKey?: string;
+}>();
+
 const emits = defineEmits(['init']);
 
 const findParamInputRef: any = ref(null);
@@ -180,11 +184,11 @@ const nowColl = computed(() => {
 });
 
 onMounted(() => {
-    emits('init', { name: MongoOpComp.name, ref: getCurrentInstance()?.exposed });
+    emits('init', { name: MongoOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
 });
 
 const changeCollection = async (id: any, schema: string, collection: string) => {
-    const label = `${id}:\`${schema}\`.${collection}`;
+    const label = `${schema}.${collection}`;
     let dataTab = state.dataTabs[label];
     if (!dataTab) {
         // 默认查询参数
@@ -230,6 +234,8 @@ const confirmFindDialog = () => {
     findCommand(state.activeName);
 };
 
+const findLoading = ref(false);
+
 const findCommand = async (key: string) => {
     const dataTab = getNowDataTab();
     const findParma = dataTab.findParam;
@@ -242,27 +248,32 @@ const findCommand = async (key: string) => {
         return;
     }
 
-    const datas = await mongoApi.findCommand.request({
-        id: dataTab.mongoId,
-        database: dataTab.database,
-        collection: dataTab.collection,
-        filter,
-        sort,
-        limit: findParma.limit || 12,
-        skip: findParma.skip || 0,
-    });
-    state.dataTabs[key].datas = wrapDatas(datas);
+    try {
+        findLoading.value = true;
+        const datas = await mongoApi.findCommand.request({
+            id: dataTab.mongoId,
+            database: dataTab.database,
+            collection: dataTab.collection,
+            filter,
+            sort,
+            limit: findParma.limit || 12,
+            skip: findParma.skip || 0,
+        });
+        state.dataTabs[key].datas = wrapDatas(datas);
 
-    // 获取coll stats
-    state.dataTabs[key].stats = await mongoApi.runCommand.request({
-        id: dataTab.mongoId,
-        database: dataTab.database,
-        command: [
-            {
-                collStats: dataTab.collection,
-            },
-        ],
-    });
+        // 获取coll stats
+        state.dataTabs[key].stats = await mongoApi.runCommand.request({
+            id: dataTab.mongoId,
+            database: dataTab.database,
+            command: [
+                {
+                    collStats: dataTab.collection,
+                },
+            ],
+        });
+    } finally {
+        findLoading.value = false;
+    }
 };
 
 /**
@@ -393,6 +404,9 @@ const getNowDataTab = () => {
 
 defineExpose({
     changeCollection,
+    onRefresh: () => {
+        findCommand(state.activeName);
+    },
 });
 </script>
 
@@ -406,8 +420,16 @@ defineExpose({
 }
 
 .mongo-data-tab {
-    .mongo-data-tab-data {
-        height: calc(100vh - 230px);
+    .el-tabs__content {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+
+        .el-tab-pane {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
     }
 
     .el-tabs__header {

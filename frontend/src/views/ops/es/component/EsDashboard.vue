@@ -1,5 +1,17 @@
 <template>
-    <el-tabs v-model="state.tabName" type="card">
+    <el-tabs v-model="state.tabName" type="card" class="es-dashboard-tabs">
+        <el-tab-pane name="idxManage" :label="t('es.opIndex')">
+            <div class="idx-manage-content">
+                <EsIndexManage :instId="props.instId" @viewData="onViewIndexData" />
+            </div>
+        </el-tab-pane>
+
+        <el-tab-pane name="dataManage" :label="t('es.opDataManage')">
+            <div class="idx-manage-content">
+                <EsIndexData ref="esIndexDataRef" :instId="props.instId" />
+            </div>
+        </el-tab-pane>
+
         <el-tab-pane name="nodesStats" v-loading="state.nodesStatsLoading" style="height: calc(100vh - 200px); overflow-y: auto">
             <template #label>
                 {{ t('es.dashboard.nodes') }}
@@ -142,12 +154,12 @@
             <el-card class="h-full">
                 <el-form :model="state.analyze" ref="analyzeFormRef" label-position="right" label-width="100">
                     <el-form-item :label="t('es.dashboard.idxName')" required prop="idxName">
-                        <el-select v-model="state.analyze.idxName" filterable clearable @change="onSelectIdxField">
+                        <el-select v-model="state.analyze.idxName" filterable clearable :teleported="false" @change="onSelectIdxField">
                             <el-option v-for="idx in state.idxFields" :key="idx.name" :value="idx.name" :label="idx.name" />
                         </el-select>
                     </el-form-item>
                     <el-form-item :label="t('es.dashboard.field')" required prop="field">
-                        <el-select v-model="state.analyze.field" filterable clearable>
+                        <el-select v-model="state.analyze.field" filterable clearable :teleported="false">
                             <el-option v-for="field in state.analyze.fields" :key="field" :value="field" :label="field" />
                         </el-select>
                     </el-form-item>
@@ -170,10 +182,13 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { defineAsyncComponent, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { esApi } from '@/views/ops/es/api';
 import { formatByteSize } from '@/common/utils/format';
 import dayjs from 'dayjs';
+
+const EsIndexData = defineAsyncComponent(() => import('../resource/EsIndexData.vue'));
+const EsIndexManage = defineAsyncComponent(() => import('./EsIndexManage.vue'));
 
 const { t } = useI18n();
 
@@ -183,9 +198,16 @@ interface Props {
 const props = defineProps<Props>();
 
 const analyzeFormRef = ref();
+const esIndexDataRef = ref();
+
+const onViewIndexData = async (idxName: string) => {
+    state.tabName = 'dataManage';
+    await nextTick();
+    esIndexDataRef.value?.selectIndex(idxName);
+};
 
 const state = reactive({
-    tabName: 'nodesStats',
+    tabName: 'idxManage',
     instInfo: [] as any[],
     clusterHealth: [] as any[],
     nodesStats: { _nodes: {} as any, nodes: [] as any[] } as any,
@@ -246,7 +268,7 @@ const fetchInstInfo = async () => {
 
 function flattenObject(obj: Record<string, any>, parentKey = '', result: Record<string, any> = {}): Record<string, any> {
     for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
             const newKey = parentKey ? `${parentKey}.${key}` : key;
             if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
                 flattenObject(obj[key], newKey, result);
@@ -379,6 +401,29 @@ const onAnalyze = async () => {
 </script>
 
 <style scoped lang="scss">
+.es-dashboard-tabs {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    :deep(.el-tabs__content) {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    :deep(.el-tab-pane) {
+        flex: 1;
+        min-height: 0;
+    }
+}
+
+.idx-manage-content {
+    height: 100%;
+}
+
 .nodes-num {
     font-size: 20px;
 }

@@ -1,6 +1,7 @@
 <template>
     <div class="db-list">
         <el-drawer
+            :append-to-body="false"
             :title="title"
             v-model="dialogVisible"
             @open="search"

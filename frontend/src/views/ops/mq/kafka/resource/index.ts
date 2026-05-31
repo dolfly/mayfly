@@ -21,7 +21,16 @@ export const KafkaOpComp: ResourceComponentConfig = {
 };
 
 const NodeTypeKafka = new NodeType(TagResourceTypeEnum.MqKafka.value).withNodeClickFunc(async (node: TagTreeNode) => {
-    (await node.ctx?.addResourceComponent(KafkaOpComp)).initKafka(node.params);
+    const kafka = node.params;
+    const tabKey = `kafka_${kafka.id}`;
+    const tabLabel = kafka.name;
+    const compRef = await node.ctx?.addResourceComponent({
+        ...KafkaOpComp,
+        tabKey,
+        tabLabel,
+        tabProps: { kafkaId: kafka.id, tabKey },
+    });
+    compRef?.initKafka?.(kafka);
 });
 
 // tagpath 节点类型
@@ -34,7 +43,10 @@ const NodeTypeKafkaTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
     const kafkaInfos = res.list;
     await sleep(100);
     return kafkaInfos.map((x: any) => {
-        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeKafka).withIsLeaf(true).withParams(x).withNodeComponent(NodeKafka);
+        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeKafka)
+            .withIsLeaf(true)
+            .withParams(x)
+            .withNodeComponent(NodeKafka);
     });
 });
 

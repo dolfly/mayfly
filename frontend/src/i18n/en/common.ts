@@ -119,6 +119,8 @@ export default {
             close: 'Close',
             closeOther: 'Close Other',
             closeAll: 'Close All',
+            closeLeft: 'Close Left',
+            closeRight: 'Close Right',
             fullscreen: 'Fullscreen',
             closeFullscreen: 'Close Fullscreen',
         },

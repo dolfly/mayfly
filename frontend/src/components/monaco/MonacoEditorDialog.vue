@@ -21,6 +21,7 @@
 
         <!-- Drawer 模式 -->
         <el-drawer
+            :append-to-body="false"
             :title="props.title"
             v-model="dialogVisible"
             :size="props.drawerSize || '50%'"

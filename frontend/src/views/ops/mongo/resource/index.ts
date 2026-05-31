@@ -23,8 +23,6 @@ export const MongoOpComp: ResourceComponentConfig = {
 
 // tagpath 节点类型
 const NodeTypeMongoTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
-    parentNode.ctx?.addResourceComponent(MongoOpComp);
-
     const res = await mongoApi.mongoList.request({ tagPath: parentNode.params.tagPath });
     if (!res.total) {
         return [];
@@ -38,7 +36,19 @@ const NodeTypeMongoTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
     });
 });
 
-const NodeTypeMongo = new NodeType(1).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
+const NodeTypeMongo = new NodeType(1)
+    .withNodeClickFunc(async (node: TagTreeNode) => {
+        const inst = node.params;
+        const tabKey = `mongo_${inst.id}`;
+        const tabLabel = inst.name;
+        await node.ctx?.addResourceComponent({
+            ...MongoOpComp,
+            tabKey,
+            tabLabel,
+            tabProps: { tabKey },
+        });
+    })
+    .withLoadNodesFunc(async (parentNode: TagTreeNode) => {
     const inst = parentNode.params;
     // 点击mongo -> 加载mongo数据库列表
     const res = await mongoApi.databases.request({ id: inst.id });
@@ -47,6 +57,7 @@ const NodeTypeMongo = new NodeType(1).withLoadNodesFunc(async (parentNode: TagTr
         return TagTreeNode.new(parentNode, `${inst.id}.${database}`, database, NodeTypeDbs)
             .withParams({
                 id: inst.id,
+                instName: inst.name,
                 database,
                 size: x.SizeOnDisk,
             })
@@ -66,7 +77,7 @@ const NodeTypeDbs = new NodeType(2).withLoadNodesFunc(async (parentNode: TagTree
 });
 
 const NodeTypeCollMenu = new NodeType(3).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
-    const { id, database } = parentNode.params;
+    const { id, database, instName } = parentNode.params;
     // 点击数据库集合节点 -> 加载集合列表
     const colls = await mongoApi.collections.request({ id, database });
     return colls.map((x: any) => {
@@ -74,6 +85,7 @@ const NodeTypeCollMenu = new NodeType(3).withLoadNodesFunc(async (parentNode: Ta
             .withIsLeaf(true)
             .withParams({
                 id,
+                instName: instName,
                 database,
                 collection: x,
             })
@@ -82,9 +94,16 @@ const NodeTypeCollMenu = new NodeType(3).withLoadNodesFunc(async (parentNode: Ta
 });
 
 const NodeTypeColl = new NodeType(4).withNodeClickFunc(async (nodeData: TagTreeNode) => {
-    const compRef = await nodeData.ctx?.addResourceComponent(MongoOpComp);
-    const { id, database, collection } = nodeData.params;
-    compRef.changeCollection(id, database, collection);
+    const { id, database, collection, instName } = nodeData.params;
+    const tabKey = `mongo_${id}`;
+    const tabLabel = instName || `mongo_${id}`;
+    const compRef = await nodeData.ctx?.addResourceComponent({
+        ...MongoOpComp,
+        tabKey,
+        tabLabel,
+        tabProps: { tabKey },
+    });
+    compRef?.changeCollection?.(id, database, collection);
 });
 
 export default {

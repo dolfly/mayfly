@@ -30,6 +30,7 @@
         </page-table>
 
         <el-drawer
+            :append-to-body="false"
             :title="addTeamDialog.title"
             v-model="addTeamDialog.visible"
             :before-close="onCancelSaveTeam"

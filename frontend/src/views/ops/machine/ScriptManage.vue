@@ -67,7 +67,7 @@
             width="80%"
             :close-on-click-modal="false"
             :modal="false"
-            @close="closeTermnial"
+            @close="closeTerminal"
             body-class="h-[65vh]"
             draggable
             append-to-body
@@ -98,10 +98,9 @@
 import { DynamicFormDialog } from '@/components/dynamic-form';
 import { TableColumn } from '@/components/pagetable';
 import PageTable from '@/components/pagetable/PageTable.vue';
-import { SearchItem } from '@/components/pagetable/SearchForm';
-import { OptionsApi } from '@/components/pagetable/SearchForm/index';
+import { SearchItem, OptionsApi } from '@/components/pagetable/SearchForm';
 import { Msg, useI18nCreateTitle, useI18nDeleteConfirm, useI18nEditTitle } from '@/hooks/useI18n';
-import { defineAsyncComponent, reactive, ref, Ref, toRefs } from 'vue';
+import {defineAsyncComponent, nextTick, onMounted, reactive, ref, Ref, toRefs, watch} from 'vue';
 import { getMachineTerminalSocketUrl, machineApi } from './api';
 import { ScriptResultEnum, ScriptTypeEnum } from './enums';
 
@@ -174,7 +173,7 @@ const state = reactive({
 const { columns, selectionData, query, editDialog, scriptParamsDialog, resultDialog, terminalDialog } = toRefs(state);
 
 const getScripts = async () => {
-    pageTableRef.value.search();
+    pageTableRef.value?.search();
 };
 
 const checkScriptType = (query: any) => {
@@ -254,7 +253,7 @@ function templateResolve(template: string, param: any) {
     });
 }
 
-const closeTermnial = () => {
+const closeTerminal = () => {
     state.terminalDialog.visible = false;
 };
 
@@ -293,5 +292,9 @@ const handleClose = () => {
     state.query.type = ScriptTypeEnum.Private.value;
     state.scriptParamsDialog.paramsFormItem = [];
 };
+
+onMounted(()=>{
+    nextTick(getScripts)
+})
 </script>
 <style lang="scss"></style>

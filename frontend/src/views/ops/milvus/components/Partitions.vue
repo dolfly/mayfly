@@ -1,6 +1,7 @@
 <template>
-    <el-space>
-        <el-select size="small" v-model="selectedCollection" style="min-width: 200px" @change="loadList" filterable clearable>
+    <div class="component-container">
+        <el-space>
+        <el-select size="small" v-model="selectedCollection" style="min-width: 200px" @change="loadList" filterable clearable :teleported="false">
             <el-option v-for="item in collections" :key="item" :label="item" :value="item" />
         </el-select>
 
@@ -20,7 +21,8 @@
                 <el-button size="small" type="danger" @click="handleDrop(row)">{{ $t('common.delete') }}</el-button>
             </template>
         </el-table-column>
-    </el-table>
+        </el-table>
+    </div>
 
     <el-dialog v-model="createDialog.visible" :title="$t('milvus.createPartition')" width="500px">
         <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="auto">
@@ -44,12 +46,13 @@ import { storeToRefs } from 'pinia';
 import { onMounted, ref, watch } from 'vue';
 import { milvusApi } from '../api';
 
-const milvusStore = useMilvusStore();
-const { collections, selectedCollection } = storeToRefs(milvusStore);
-
 const props = defineProps<{
     milvusId: number;
+    tabKey?: string;
 }>();
+
+const milvusStore = useMilvusStore(props.tabKey || 'milvusStore');
+const { collections, selectedCollection } = storeToRefs(milvusStore);
 
 const list = ref<any[]>([]);
 const createDialog = ref({
@@ -126,4 +129,16 @@ watch(
 );
 </script>
 
-<style scoped></style>
+<style scoped>
+.component-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.component-container :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+}
+</style>

@@ -1,7 +1,7 @@
 <template>
-    <div class="db-table">
+    <div class="db-table flex flex-col gap-1">
         <el-row class="mb-1">
-            <el-popover v-model:visible="state.dumpInfo.visible" trigger="click" :width="470" placement="right">
+            <el-popover v-model:visible="state.dumpInfo.visible" trigger="click" :width="470" placement="right" :teleported="false">
                 <template #reference>
                     <el-button v-auth="'db:data:export'" :disabled="state.dumpInfo.tables?.length == 0" class="ml-1" type="success" size="small">
                         {{ $t('db.dump') }}
@@ -353,4 +353,11 @@ const onSubmitSql = async (row: { tableName: string }) => {
     await getTables();
 };
 </script>
-<style lang="scss"></style>
+<style lang="scss">
+.db-table {
+    > .el-table {
+        flex: 1;
+        min-height: 0;
+    }
+}
+</style>

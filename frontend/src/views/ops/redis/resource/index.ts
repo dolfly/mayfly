@@ -37,7 +37,19 @@ const NodeTypeRedisTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
 });
 
 // redis实例节点类型
-const NodeTypeRedis = new NodeType(2).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
+const NodeTypeRedis = new NodeType(2)
+    .withNodeClickFunc(async (node: TagTreeNode) => {
+        const redis = node.params;
+        const tabKey = `redis_${redis.id}`;
+        const tabLabel = redis.name;
+        const compRef = await node.ctx?.addResourceComponent({
+            ...RedisOpComp,
+            tabKey,
+            tabLabel,
+            tabProps: { tabKey },
+        });
+    })
+    .withLoadNodesFunc(async (parentNode: TagTreeNode) => {
     const redisInfo = parentNode.params;
 
     let dbs: TagTreeNode[] = redisInfo.db.split(',').map((x: string) => {
@@ -76,7 +88,16 @@ const NodeTypeRedis = new NodeType(2).withLoadNodesFunc(async (parentNode: TagTr
 
 // 库节点类型
 const NodeTypeDb = new NodeType(21).withNodeClickFunc(async (node: TagTreeNode) => {
-    (await node.ctx?.addResourceComponent(RedisOpComp)).onDbClick(node.params);
+    const params = node.params;
+    const tabKey = `redis_${params.id}`;
+    const tabLabel = params.redisName;
+    const compRef = await node.ctx?.addResourceComponent({
+        ...RedisOpComp,
+        tabKey,
+        tabLabel,
+        tabProps: { tabKey },
+    });
+    compRef?.onDbClick?.(params);
 });
 
 export default {

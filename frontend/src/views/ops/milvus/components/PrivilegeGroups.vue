@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="component-container">
         <!-- 工具栏 -->
         <div class="mb5" style="display: flex; align-items: center">
             <el-button size="small" type="primary" icon="plus" @click="handleCreate">{{ $t('milvus.addPrivilegeGroup') }}</el-button>
@@ -116,3 +116,17 @@ watch(
     }
 );
 </script>
+
+<style scoped>
+.component-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.component-container :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+}
+</style>

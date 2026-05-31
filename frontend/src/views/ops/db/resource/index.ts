@@ -6,7 +6,7 @@ import { defineAsyncComponent } from 'vue';
 import { dbApi } from '../api';
 import { sleep } from '@/common/utils/loading';
 import { DbInst } from '../db';
-import { schemaDbTypes } from '../dialect/index';
+import { schemaDbTypes, getDbDialect } from '../dialect/index';
 import { i18n } from '@/i18n';
 import { formatByteSize } from '@/common/utils/format';
 
@@ -43,11 +43,25 @@ export const DbDataOpComp = {
     icon: DbIcon,
 };
 
+// 辅助函数：构造带 tabKey 的 DB 组件配置
+const dbCompWithTab = (node: TagTreeNode) => {
+    const p = node.params;
+    // 根据数据库类型获取对应方言图标（mysql/postgresql/clickhouse等）
+    const icon = p.type ? { name: getDbDialect(p.type).getInfo().icon } : DbIcon;
+    return {
+        ...DbDataOpComp,
+        icon,
+        tabKey: `db_${p.id}`,
+        tabLabel: p.name || `DB_${p.id}`,
+        tabProps: { tabKey: `db_${p.id}` },
+    };
+};
+
 // node节点点击时，触发改变db事件
 const nodeClickChangeDb = async (nodeData: TagTreeNode) => {
     const params = nodeData.params;
     if (params.db) {
-        const compRef = await nodeData.ctx?.addResourceComponent(DbDataOpComp);
+        const compRef = await nodeData.ctx?.addResourceComponent(dbCompWithTab(nodeData));
         compRef.onChangeDb(
             {
                 id: params.id,
@@ -64,11 +78,10 @@ const nodeClickChangeDb = async (nodeData: TagTreeNode) => {
 
 const ContextmenuItemRefresh = new ContextmenuItem('refresh', 'common.refresh')
     .withIcon('RefreshRight')
-    .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(DbDataOpComp)).reloadNode(node.key));
+    .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).reloadNode(node.key));
 
 // 数据库实例节点类型
 export const NodeTypeDbInst = new NodeType(TagResourceTypeEnum.DbInstance.value).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
-    parentNode.ctx?.addResourceComponent(DbDataOpComp);
     const tagPath = parentNode.params.tagPath;
 
     const dbInstancesRes = await dbApi.instances.request({ tagPath, pageSize: 100 });
@@ -199,11 +212,11 @@ const NodeTypeTableMenu = new NodeType(4)
     .withContextMenuItems([
         ContextmenuItemRefresh,
         new ContextmenuItem('createTable', 'db.createTable').withIcon('Plus').withOnClick(async (parentNode: TagTreeNode) => {
-            (await parentNode.ctx?.addResourceComponent(DbDataOpComp))?.onEditTable(parentNode);
+            (await parentNode.ctx?.addResourceComponent(dbCompWithTab(parentNode)))?.onEditTable(parentNode);
         }),
         new ContextmenuItem('tablesOp', 'db.tableOp').withIcon('Setting').withOnClick(async (parentNode: TagTreeNode) => {
             const params = parentNode.params;
-            (await parentNode.ctx?.addResourceComponent(DbDataOpComp)).addTablesOpTab({
+            (await parentNode.ctx?.addResourceComponent(dbCompWithTab(parentNode))).addTablesOpTab({
                 id: params.id,
                 db: params.db,
                 type: params.type,
@@ -212,7 +225,7 @@ const NodeTypeTableMenu = new NodeType(4)
         }),
     ])
     .withLoadNodesFunc(async (parentNode: TagTreeNode) => {
-        const compRef = await parentNode.ctx?.addResourceComponent(DbDataOpComp);
+        const compRef = await parentNode.ctx?.addResourceComponent(dbCompWithTab(parentNode));
         const params = parentNode.params;
         // // 获取当前库的所有表信息
         const tables = await compRef.loadTables(params);
@@ -272,29 +285,29 @@ const NodeTypeTable = new NodeType(226)
     .withContextMenuItems([
         new ContextmenuItem('copyTable', 'db.copyTable')
             .withIcon('copyDocument')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(DbDataOpComp)).onCopyTable(node)),
+            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onCopyTable(node)),
         new ContextmenuItem('renameTable', 'db.renameTable')
             .withIcon('edit')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(DbDataOpComp)).onRenameTable(node)),
+            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onRenameTable(node)),
         new ContextmenuItem('editTable', 'db.editTable')
             .withIcon('edit')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(DbDataOpComp)).onEditTable(node)),
+            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onEditTable(node)),
         new ContextmenuItem('delTable', 'db.delTable')
             .withIcon('Delete')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(DbDataOpComp)).onDeleteTable(node)),
+            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onDeleteTable(node)),
         new ContextmenuItem('ddl', 'DDL')
             .withIcon('Document')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(DbDataOpComp)).onGenDdl(node)),
+            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onGenDdl(node)),
     ])
     .withNodeClickFunc(async (node: TagTreeNode) => {
         const params = node.params;
-        (await node.ctx?.addResourceComponent(DbDataOpComp)).loadTableData({ id: params.id, nodeKey: node.key }, params.db, params.tableName);
+        (await node.ctx?.addResourceComponent(dbCompWithTab(node))).loadTableData({ id: params.id, nodeKey: node.key }, params.db, params.tableName);
     });
 
 // sql模板节点类型
 const NodeTypeSql = new NodeType(227)
     .withNodeClickFunc(async (parentNode: TagTreeNode) => {
-        const compRef = await parentNode.ctx?.addResourceComponent(DbDataOpComp);
+        const compRef = await parentNode.ctx?.addResourceComponent(dbCompWithTab(parentNode));
         const params = parentNode.params;
         compRef.addQueryTab({ id: params.id, nodeKey: parentNode.key, dbs: params.dbs }, params.db, params.sqlName);
     })
@@ -302,7 +315,7 @@ const NodeTypeSql = new NodeType(227)
         new ContextmenuItem('delSql', 'common.delete')
             .withIcon('delete')
             .withOnClick(async (node: TagTreeNode) =>
-                (await node.ctx?.addResourceComponent(DbDataOpComp)).deleteSql(node.params.id, node.params.db, node.params.sqlName)
+                (await node.ctx?.addResourceComponent(dbCompWithTab(node))).deleteSql(node.params.id, node.params.db, node.params.sqlName)
             ),
     ]);
 

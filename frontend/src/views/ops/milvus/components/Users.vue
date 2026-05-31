@@ -1,8 +1,11 @@
 <template>
-    <el-button size="small" icon="plus" type="primary" @click="handleCreate">{{ $t('milvus.createUser') }}</el-button>
-    <el-button text icon="refresh" @click="loadList" :loading="loading" />
+    <div class="component-container">
+        <div>
+            <el-button size="small" icon="plus" type="primary" @click="handleCreate">{{ $t('milvus.createUser') }}</el-button>
+            <el-button size="small" text icon="refresh" @click="loadList" :loading="loading" />
+        </div>
 
-    <el-table :data="list">
+        <el-table :data="list">
         <el-table-column prop="name" :label="$t('common.username')" />
         <el-table-column :label="$t('common.operation')" width="350">
             <template #default="{ row }">
@@ -11,7 +14,8 @@
                 <el-button size="small" type="danger" @click="handleDelete(row)">{{ $t('common.delete') }}</el-button>
             </template>
         </el-table-column>
-    </el-table>
+        </el-table>
+    </div>
 
     <el-dialog v-model="createDialog.visible" :title="$t('milvus.createUser')" width="500px">
         <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="auto">
@@ -72,11 +76,12 @@ import { FormInstance } from 'element-plus';
 import { onMounted, ref, watch } from 'vue';
 import { milvusApi } from '../api';
 
-const milvusStore = useMilvusStore();
-
 const props = defineProps<{
     milvusId: number;
+    tabKey?: string;
 }>();
+
+const milvusStore = useMilvusStore(props.tabKey || 'milvusStore');
 
 const list = ref<any[]>([]);
 const createDialog = ref({
@@ -239,4 +244,16 @@ watch(
 );
 </script>
 
-<style scoped></style>
+<style scoped>
+.component-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.component-container :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+}
+</style>

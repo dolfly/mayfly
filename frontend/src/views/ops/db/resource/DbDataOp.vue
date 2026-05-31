@@ -1,5 +1,5 @@
 <template>
-    <div class="db-sql-exec h-full">
+    <div class="db-sql-exec h-full flex flex-col">
         <el-row>
             <el-col :span="24" v-if="state.db">
                 <el-descriptions :column="4" size="small" border>
@@ -27,6 +27,7 @@
                             width="auto"
                             :title="$t('db.dbShowSetting')"
                             trigger="click"
+                            :teleported="false"
                         >
                             <el-row>
                                 <el-checkbox
@@ -79,18 +80,18 @@
             </el-col>
         </el-row>
 
-        <div id="data-exec" class="mt-1">
+        <div id="data-exec" ref="dataExecRef" class="mt-1 flex-1 min-h-0 overflow-visible">
             <el-tabs
                 v-if="state.tabs.size > 0"
                 type="card"
                 @tab-remove="onRemoveTab"
                 @tab-change="onTabChange"
                 v-model="state.activeName"
-                class="h-full! w-full"
+                class="db-data-tabs w-full"
             >
                 <el-tab-pane class="h-full!" closable v-for="dt in state.tabs.values()" :label="dt.label" :name="dt.key" :key="dt.key">
                     <template #label>
-                        <el-popover :show-after="1000" placement="bottom-start" trigger="hover" :width="250">
+                        <el-popover :show-after="1000" placement="bottom-start" trigger="hover" :width="250" :teleported="false">
                             <template #reference>
                                 <span @contextmenu.prevent="onTabContextmenu(dt, $event)" class="text-[12px]!">{{ dt.label }}</span>
                             </template>
@@ -119,7 +120,6 @@
                         :db-id="dt.dbId"
                         :db-name="dt.db"
                         :table-name="dt.params.table"
-                        :table-height="state.dataTabsTableHeight"
                         :ref="(el: any) => (dt.componentRef = el)"
                     ></db-table-data-op>
 
@@ -192,6 +192,10 @@ const { t } = useI18n();
 
 const resourceOpCtx: ResourceOpCtx | undefined = inject(ResourceOpCtxKey);
 
+const props = defineProps<{
+    tabKey?: string;
+}>();
+
 const emits = defineEmits(['init']);
 
 const tabContextmenuRef: any = useTemplateRef('tabContextmenuRef');
@@ -227,7 +231,6 @@ const state = reactive({
         dropdown: { x: 0, y: 0 },
         items: tabContextmenuItems,
     },
-    dataTabsTableHeight: '600px',
     tablesOpHeight: '600',
     dbServerInfo: {
         loading: true,
@@ -257,22 +260,29 @@ const dbConfig = useStorage('dbConfig', DbThemeConfig);
 
 onMounted(() => {
     state.reloadStatus = !dbConfig.value.cacheTable;
-    emits('init', { name: DbDataOpComp.name, ref: getCurrentInstance()?.exposed });
+    emits('init', { name: DbDataOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
     setHeight();
     // 监听浏览器窗口大小变化,更新对应组件高度
     useEventListener(window, 'resize', setHeight);
 });
+
+const dataExecRef = useTemplateRef<HTMLElement>('dataExecRef');
 
 onBeforeUnmount(() => {
     dispposeCompletionItemProvider('sql');
 });
 
 /**
- * 设置editor高度和数据表高度
+ * 设置editor高度和数据表高度（基于容器位置计算，兼容全屏模式）
  */
 const setHeight = () => {
-    state.dataTabsTableHeight = window.innerHeight - 253 + 'px';
-    state.tablesOpHeight = window.innerHeight - 225 + 'px';
+    const el = document.getElementById('data-exec');
+    if (el) {
+        const rect = el.getBoundingClientRect();
+        state.tablesOpHeight = window.innerHeight - rect.top - 60 + 'px';
+    } else {
+        state.tablesOpHeight = window.innerHeight - 225 + 'px';
+    }
 };
 
 // 选择数据库,改变当前正在操作的数据库信息
@@ -663,15 +673,29 @@ defineExpose({
 <style lang="scss" scoped>
 .db-sql-exec {
     #data-exec {
-        ::v-deep(.el-tabs) {
+        ::v-deep(.db-data-tabs) {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
             --el-tabs-header-height: 30px;
-        }
 
-        ::v-deep(.el-tabs__header) {
-            margin: 0 0 5px;
+            > .el-tabs__header {
+                margin: 0 0 5px;
+                flex-shrink: 0;
 
-            .el-tabs__item {
-                padding: 0 5px;
+                .el-tabs__item {
+                    padding: 0 5px;
+                }
+            }
+
+            > .el-tabs__content {
+                flex: 1;
+                min-height: 0;
+                overflow: visible;
+            }
+
+            .el-tab-pane {
+                height: 100%;
             }
         }
 

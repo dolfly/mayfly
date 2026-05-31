@@ -88,7 +88,7 @@ export const milvusApi = {
     insertSampleData: (milvusId: number, collection: string, data: any) =>
         Api.newPost(`/milvus/${milvusId}/collections/${collection}/insert-sample-data?db=${db}`).request(withAc(data)),
     importFile: (milvusId: number, collection: string, formData: FormData) =>
-        Api.newPost(`/milvus/${milvusId}/collections/${collection}/import-file?db=${db}`).request(formData),
+        Api.newPost(`/milvus/${milvusId}/collections/${collection}/import-file?db=${db}&ac=${currentAcName}`).request(formData),
 
     // 用户权限
     listUsers: (milvusId: number) => Api.newGet(`/milvus/${milvusId}/users`).request(withAc()),

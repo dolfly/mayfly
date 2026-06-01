@@ -18,11 +18,16 @@ const NodeMilvus = defineAsyncComponent(() => import('./NodeMilvus.vue'));
 const NodeMilvusAc = defineAsyncComponent(() => import('./NodeMilvusAc.vue'));
 
 const getMilvusOpTab = async (milvus: any, acName: string) => {
-    const tabKey = `milvus_${milvus.id}_${acName}`;
+    const tabKey = `milvus.${milvus.id}.${acName}`;
     return await createResourceOpTab({
         key: tabKey,
         name: milvus.acUsername ? `${milvus.name} (${milvus.acUsername})` : milvus.name,
         component: MilvusOp,
+        componentProps: {
+            milvusId: milvus.id,
+            acName,
+            tabKey,
+        },
         tabComponentProps: { icon: MilvusIcon },
     });
 };
@@ -44,7 +49,7 @@ const NodeTypeMilvus = new NodeType(TagResourceTypeEnum.Milvus.value).withLoadNo
     const milvus = node.params;
     const authCerts = milvus.authCerts || [];
     return authCerts.map((x: any) =>
-        TagTreeNode.new(node, x.name, x.username, NodeTypeMilvusAc)
+        TagTreeNode.new(node, `milvus.${milvus.id}.${x.name}`, x.username, NodeTypeMilvusAc)
             .withNodeComponent(NodeMilvusAc)
             .withParams({ ...milvus, selectAuthCert: x })
             .withIsLeaf(true)
@@ -62,7 +67,7 @@ const NodeTypeMilvusTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(as
     const milvusInfos = res.list;
     await sleep(100);
     return milvusInfos.map((x: any) => {
-        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeMilvus).withParams(x).withNodeComponent(NodeMilvus);
+        return TagTreeNode.new(parentNode, `milvus.${x.id}`, x.name, NodeTypeMilvus).withParams(x).withNodeComponent(NodeMilvus);
     });
 });
 

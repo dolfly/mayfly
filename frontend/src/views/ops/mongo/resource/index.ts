@@ -18,7 +18,7 @@ const NodeMongo = defineAsyncComponent(() => import('./NodeMongo.vue'));
 const NodeMongoDb = defineAsyncComponent(() => import('./NodeMongoDb.vue'));
 
 const getMongoOpTab = async (inst: any) => {
-    const tabKey = `mongo_${inst.id}`;
+    const tabKey = `mongo.${inst.code}`;
     return await createResourceOpTab({
         key: tabKey,
         name: inst.instName || inst.name,
@@ -42,7 +42,7 @@ const NodeTypeMongoTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
     await sleep(100);
     return mongoInfos?.map((x: any) => {
         x.tagPath = parentNode.key;
-        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeMongo).withParams(x).withNodeComponent(NodeMongo);
+        return TagTreeNode.new(parentNode, `mongo.${x.code}`, x.name, NodeTypeMongo).withParams(x).withNodeComponent(NodeMongo);
     });
 });
 
@@ -57,7 +57,7 @@ const NodeTypeMongo = new NodeType(1)
         const res = await mongoApi.databases.request({ id: inst.id });
         return res.Databases.map((x: any) => {
             const database = x.Name;
-            return TagTreeNode.new(parentNode, `${inst.id}.${database}`, database, NodeTypeDbs)
+            return TagTreeNode.new(parentNode, `${parentNode.key}.${database}`, database, NodeTypeDbs)
                 .withParams({
                     id: inst.id,
                     instName: inst.name,
@@ -72,11 +72,7 @@ const NodeTypeMongo = new NodeType(1)
 const NodeTypeDbs = new NodeType(2).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
     const params = parentNode.params;
     // 点击数据库列表 -> 加载数据库下拥有的菜单列表
-    return [
-        TagTreeNode.new(parentNode, `${params.id}.${params.database}.mongo-coll`, 'mongo.coll', NodeTypeCollMenu)
-            .withIcon({ name: 'Document' })
-            .withParams(params),
-    ];
+    return [TagTreeNode.new(parentNode, `${parentNode.key}.mongo-coll`, 'mongo.coll', NodeTypeCollMenu).withIcon({ name: 'Document' }).withParams(params)];
 });
 
 const NodeTypeCollMenu = new NodeType(3).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
@@ -84,7 +80,7 @@ const NodeTypeCollMenu = new NodeType(3).withLoadNodesFunc(async (parentNode: Ta
     // 点击数据库集合节点 -> 加载集合列表
     const colls = await mongoApi.collections.request({ id, database });
     return colls.map((x: any) => {
-        return TagTreeNode.new(parentNode, `${id}.${database}.${x}`, x, NodeTypeColl)
+        return TagTreeNode.new(parentNode, `${parentNode.key}.${x}`, x, NodeTypeColl)
             .withIsLeaf(true)
             .withParams({
                 id,

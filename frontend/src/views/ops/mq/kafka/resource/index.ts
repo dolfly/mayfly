@@ -17,7 +17,7 @@ const KafkaOp = defineAsyncComponent(() => import('./KafkaOp.vue'));
 const NodeKafka = defineAsyncComponent(() => import('./NodeKafka.vue'));
 
 const getKafkaOpTab = async (kafka: any) => {
-    const tabKey = `kafka_${kafka.id}`;
+    const tabKey = `kafka.${kafka.code}`;
     return await createResourceOpTab({
         key: tabKey,
         name: kafka.name,
@@ -46,7 +46,7 @@ const NodeTypeKafkaTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
     const kafkaInfos = res.list;
     await sleep(100);
     return kafkaInfos.map((x: any) => {
-        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeKafka).withIsLeaf(true).withParams(x).withNodeComponent(NodeKafka);
+        return TagTreeNode.new(parentNode, `kafka.${x.code}`, x.name, NodeTypeKafka).withIsLeaf(true).withParams(x).withNodeComponent(NodeKafka);
     });
 });
 

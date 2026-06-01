@@ -11,82 +11,17 @@
         <div class="es-idx-table">
             <el-auto-resizer>
                 <template #default="{ height, width }">
-                    <el-table
+                    <el-table-v2
+                        :columns="tableColumns"
                         :data="filteredIndices"
-                        v-loading="loading"
-                        stripe
-                        size="small"
-                        :height="height"
                         :width="width"
-                        @sort-change="onSortChange"
-                        :default-sort="{ prop: 'index', order: 'ascending' }"
-                    >
-                        <el-table-column prop="index" :label="t('es.indexName')" min-width="200" sortable="custom" show-overflow-tooltip>
-                            <template #default="{ row }">
-                                <el-link type="primary" underline="never" @click="emit('viewData', row.index)">{{ row.index }}</el-link>
-                            </template>
-                        </el-table-column>
-                        <el-table-column :label="t('es.aliases')" min-width="180">
-                            <template #default="{ row }">
-                                <el-space wrap :size="4">
-                                    <el-tag
-                                        v-for="alias in aliasesMap[row.index] || []"
-                                        :key="alias"
-                                        closable
-                                        size="small"
-                                        type="info"
-                                        @close="onRemoveAlias(row.index, alias)"
-                                        >{{ alias }}</el-tag
-                                    >
-                                    <el-button link type="primary" size="small" @click="onAddAlias(row)">
-                                        <el-icon><Plus /></el-icon>
-                                    </el-button>
-                                </el-space>
-                            </template>
-                        </el-table-column>
-                        <el-table-column prop="health" :label="t('es.health')" width="100" sortable="custom" align="center">
-                            <template #default="{ row }">
-                                <el-tag size="small" :type="getHealthTagType(row.health)">{{ row.health }}</el-tag>
-                            </template>
-                        </el-table-column>
-                        <el-table-column prop="status" :label="t('es.status')" width="100" sortable="custom" align="center">
-                            <template #default="{ row }">
-                                <el-tag size="small" :type="row.status === 'open' ? 'success' : 'danger'">{{ row.status }}</el-tag>
-                            </template>
-                        </el-table-column>
-                        <el-table-column prop="pri" label="pri" width="70" align="center" />
-                        <el-table-column prop="rep" label="rep" width="70" align="center" />
-                        <el-table-column prop="docs.count" :label="t('es.docs')" width="120" sortable="custom" align="right">
-                            <template #default="{ row }">{{ row['docs.count'] ?? '-' }}</template>
-                        </el-table-column>
-                        <el-table-column prop="store.size" :label="t('es.size')" width="120" sortable="custom" align="right" />
-                        <el-table-column :label="t('common.operation')" width="260" fixed="right" align="center">
-                            <template #default="{ row }">
-                                <el-button link type="primary" size="small" @click="onViewDetail(row)">{{ t('es.indexDetail') }}</el-button>
-                                <el-dropdown trigger="click" @command="(cmd: string) => onRowCommand(cmd, row)">
-                                    <el-button link type="primary" size="small">
-                                        {{ t('common.more') }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-                                    </el-button>
-                                    <template #dropdown>
-                                        <el-dropdown-menu>
-                                            <el-dropdown-item command="copyName" :icon="CopyDocument">{{
-                                                t('es.contextmenu.index.copyName')
-                                            }}</el-dropdown-item>
-                                            <el-dropdown-item command="refresh" :icon="Refresh">{{ t('es.contextmenu.index.refresh') }}</el-dropdown-item>
-                                            <el-dropdown-item command="flush" :icon="Refresh">{{ t('es.contextmenu.index.flush') }}</el-dropdown-item>
-                                            <el-dropdown-item command="clearCache" :icon="Refresh">{{ t('es.contextmenu.index.clearCache') }}</el-dropdown-item>
-                                            <el-dropdown-item command="reindex" :icon="Switch">{{ t('es.Reindex') }}</el-dropdown-item>
-                                            <el-dropdown-item v-if="row.status === 'open'" command="close" :icon="Close">{{
-                                                t('es.contextmenu.index.Close')
-                                            }}</el-dropdown-item>
-                                            <el-dropdown-item v-else command="open" :icon="Select">{{ t('es.contextmenu.index.Open') }}</el-dropdown-item>
-                                            <el-dropdown-item command="delete" :icon="Delete" divided>{{ t('common.delete') }}</el-dropdown-item>
-                                        </el-dropdown-menu>
-                                    </template>
-                                </el-dropdown>
-                            </template>
-                        </el-table-column>
-                    </el-table>
+                        :height="height"
+                        :row-height="40"
+                        v-loading="loading"
+                        :sort-state="sortState"
+                        @column-sort="onColumnSort"
+                        fixed
+                    />
                 </template>
             </el-auto-resizer>
         </div>
@@ -156,7 +91,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, reactive, ref } from 'vue';
+import { computed, defineAsyncComponent, h, onMounted, reactive, ref } from 'vue';
+import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElIcon, ElTag } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 import { ArrowDown, Close, CopyDocument, Delete, Plus, Refresh, Select, Switch } from '@element-plus/icons-vue';
 import { esApi } from '@/views/ops/es/api';
@@ -179,8 +115,105 @@ const loading = ref(false);
 const showSysIndex = ref(false);
 const indices = ref<any[]>([]);
 const aliasesMap = reactive<Record<string, string[]>>({});
-const sortProp = ref('index');
-const sortOrder = ref<'ascending' | 'descending'>('ascending');
+const sortState = ref({ index: 'ascending' });
+
+// tableColumns for el-table-v2
+const tableColumns = computed(() => [
+    {
+        dataKey: 'index',
+        key: 'index',
+        title: t('es.indexName'),
+        width: 220,
+        sortable: true,
+        cellRenderer: ({ rowData }: any) => h('a', {
+            href: 'javascript:void(0)',
+            style: { color: 'var(--el-color-primary)', textDecoration: 'none' },
+            onClick: () => emit('viewData', rowData.index)
+        }, rowData.index)
+    },
+    {
+        dataKey: 'aliases',
+        key: 'aliases',
+        title: t('es.aliases'),
+        width: 200,
+        cellRenderer: ({ rowData }: any) => {
+            const aliases = aliasesMap[rowData.index] || [];
+            return h('div', { class: 'flex items-center gap-1 flex-wrap' },
+                [...aliases.map((alias: string) => h(ElTag, {
+                    closable: true,
+                    size: 'small',
+                    type: 'info',
+                    onClose: () => onRemoveAlias(rowData.index, alias)
+                }, () => alias)),
+                h(ElButton, {
+                    link: true,
+                    type: 'primary',
+                    size: 'small',
+                    onClick: () => onAddAlias(rowData)
+                }, () => h(ElIcon, () => h(Plus)))]
+            );
+        }
+    },
+    {
+        dataKey: 'health',
+        key: 'health',
+        title: t('es.health'),
+        width: 100,
+        sortable: true,
+        align: 'center',
+        cellRenderer: ({ rowData }: any) => h(ElTag, { size: 'small', type: getHealthTagType(rowData.health) }, () => rowData.health)
+    },
+    {
+        dataKey: 'status',
+        key: 'status',
+        title: t('es.status'),
+        width: 100,
+        sortable: true,
+        align: 'center',
+        cellRenderer: ({ rowData }: any) => h(ElTag, { size: 'small', type: rowData.status === 'open' ? 'success' : 'danger' }, () => rowData.status)
+    },
+    { dataKey: 'pri', key: 'pri', title: 'pri', width: 70, align: 'center' },
+    { dataKey: 'rep', key: 'rep', title: 'rep', width: 70, align: 'center' },
+    {
+        dataKey: 'docs.count',
+        key: 'docs.count',
+        title: t('es.docs'),
+        width: 120,
+        sortable: true,
+        align: 'right',
+        cellRenderer: ({ rowData }: any) => rowData['docs.count'] ?? '-'
+    },
+    { dataKey: 'store.size', key: 'store.size', title: t('es.size'), width: 120, sortable: true, align: 'right' },
+    {
+        dataKey: 'operation',
+        key: 'operation',
+        title: t('common.operation'),
+        width: 200,
+        fixed: 'right',
+        align: 'center',
+        cellRenderer: ({ rowData }: any) => {
+            const dropdownTrigger = h(ElButton, { link: true, type: 'primary', size: 'small' }, () => [t('common.more'), h(ElIcon, () => h(ArrowDown))]);
+            const dropdownMenu = [
+                h(ElDropdownItem, { key: 'copyName', command: 'copyName' }, () => t('es.contextmenu.index.copyName')),
+                h(ElDropdownItem, { key: 'refresh', command: 'refresh' }, () => t('es.contextmenu.index.refresh')),
+                h(ElDropdownItem, { key: 'flush', command: 'flush' }, () => t('es.contextmenu.index.flush')),
+                h(ElDropdownItem, { key: 'clearCache', command: 'clearCache' }, () => t('es.contextmenu.index.clearCache')),
+                h(ElDropdownItem, { key: 'reindex', command: 'reindex' }, () => t('es.Reindex')),
+                rowData.status === 'open'
+                    ? h(ElDropdownItem, { key: 'close', command: 'close' }, () => t('es.contextmenu.index.Close'))
+                    : h(ElDropdownItem, { key: 'open', command: 'open' }, () => t('es.contextmenu.index.Open')),
+                h(ElDropdownItem, { key: 'delete', command: 'delete', divided: true }, () => t('common.delete'))
+            ];
+            return h('div', { class: 'flex items-center justify-center gap-1' }, [
+                h(ElButton, { link: true, type: 'primary', size: 'small', onClick: () => onViewDetail(rowData) }, () => t('es.indexDetail')),
+                h(ElDropdown, {
+                    trigger: 'click',
+                    onCommand: (cmd: string) => onRowCommand(cmd, rowData)
+                }, { default: () => dropdownTrigger, dropdown: () => h(ElDropdownMenu, {}, () => dropdownMenu) })
+            ]);
+        }
+    }
+]);
 
 const addIndexVisible = ref(false);
 const templateVisible = ref(false);
@@ -216,12 +249,13 @@ const idxNames = computed(() => indices.value.map((idx: any) => idx.index).filte
 
 const filteredIndices = computed(() => {
     const data = [...indices.value];
-    if (!sortProp.value) return data;
-    const prop = sortProp.value;
-    const dir = sortOrder.value === 'ascending' ? 1 : -1;
+    const entries = Object.entries(sortState.value);
+    if (entries.length === 0) return data;
+    const [key, order] = entries[0];
+    const dir = order === 'ascending' ? 1 : -1;
     return data.sort((a, b) => {
-        const va = a[prop] ?? '';
-        const vb = b[prop] ?? '';
+        const va = a[key] ?? '';
+        const vb = b[key] ?? '';
         if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
         return String(va).localeCompare(String(vb)) * dir;
     });
@@ -272,9 +306,8 @@ const fetchAliases = async () => {
     }
 };
 
-const onSortChange = ({ prop, order }: any) => {
-    sortProp.value = prop || 'index';
-    sortOrder.value = order === 'descending' ? 'descending' : 'ascending';
+const onColumnSort = ({ key, order }: any) => {
+    sortState.value = { [key]: order } as any;
 };
 
 const onAddIndex = () => {

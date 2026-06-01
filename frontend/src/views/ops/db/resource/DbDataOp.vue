@@ -170,14 +170,12 @@ import { dispposeCompletionItemProvider } from '@/components/monaco/completionIt
 import MonacoEditor from '@/components/monaco/MonacoEditor.vue';
 import SvgIcon from '@/components/svgIcon/index.vue';
 import { Msg, useI18nCreateTitle, useI18nDeleteConfirm, useI18nEditTitle } from '@/hooks/useI18n';
-import { ResourceOpCtx } from '@/views/ops/component/tag';
 import SqlExecBox from '@/views/ops/db/component/sqleditor/SqlExecBox';
-import { DbDataOpComp } from '@/views/ops/db/resource';
-import { ResourceOpCtxKey } from '@/views/ops/resource/resourceOp';
+import { ResourceOpCtx, ResourceOpCtxKey } from '@/views/ops/resource/resourceOp';
 import { useEventListener, useStorage } from '@vueuse/core';
 import { ElCheckbox, ElMessageBox } from 'element-plus';
 import { format as sqlFormatter } from 'sql-formatter';
-import { defineAsyncComponent, getCurrentInstance, h, inject, onBeforeUnmount, onMounted, reactive, ref, toRefs, useTemplateRef } from 'vue';
+import { defineAsyncComponent, h, inject, onBeforeUnmount, onMounted, reactive, ref, toRefs, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { dbApi } from '../api';
 import { DbInst, DbThemeConfig, registerDbCompletionItemProvider, TabInfo, TabType } from '../db';
@@ -193,7 +191,8 @@ const { t } = useI18n();
 const resourceOpCtx: ResourceOpCtx | undefined = inject(ResourceOpCtxKey);
 
 const props = defineProps<{
-    tabKey?: string;
+    dbInfo: any;
+    db: string;
 }>();
 
 const emits = defineEmits(['init']);
@@ -259,8 +258,8 @@ const { nowDbInst, tableCreateDialog } = toRefs(state);
 const dbConfig = useStorage('dbConfig', DbThemeConfig);
 
 onMounted(() => {
+    changeDb(props.dbInfo, props.db);
     state.reloadStatus = !dbConfig.value.cacheTable;
-    emits('init', { name: DbDataOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
     setHeight();
     // 监听浏览器窗口大小变化,更新对应组件高度
     useEventListener(window, 'resize', setHeight);
@@ -286,8 +285,8 @@ const setHeight = () => {
 };
 
 // 选择数据库,改变当前正在操作的数据库信息
-const changeDb = async (db: any, dbName: string) => {
-    state.nowDbInst = await DbInst.getOrNewInst(db);
+const changeDb = (db: any, dbName: string) => {
+    state.nowDbInst = DbInst.getOrNewInst(db);
     state.nowDbInst.databases = db.databases;
     state.db = dbName;
 };
@@ -297,7 +296,7 @@ const loadTableData = async (db: any, dbName: string, tableName: string) => {
     if (tableName == '') {
         return;
     }
-    await changeDb(db, dbName);
+    changeDb(db, dbName);
 
     const key = `tableData:${db.id}.${dbName}.${tableName}`;
     let tab = state.tabs.get(key);
@@ -326,7 +325,7 @@ const addQueryTab = async (db: any, dbName: string, sqlName: string = '') => {
         Msg.warning('db.noDbInstMsg');
         return;
     }
-    await changeDb(db, dbName);
+    changeDb(db, dbName);
 
     const dbId = db.id;
     let label;
@@ -377,7 +376,7 @@ const addTablesOpTab = async (db: any) => {
         Msg.warning('db.noDbInstMsg');
         return;
     }
-    await changeDb(db, dbName);
+    changeDb(db, dbName);
 
     const dbId = db.id;
     let key = `tablesOp:${dbId}.${dbName}`;

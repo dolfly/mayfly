@@ -1,7 +1,6 @@
 import Api from '@/common/Api';
-import { registerSqlExecAborter, createSqlExecNotification } from '@/components/sysmsg/db/db-sql-exec-progress';
 import { AesEncrypt } from '@/common/crypto';
-import { joinClientParams } from '@/common/request';
+import { createSqlExecNotification, registerSqlExecAborter } from '@/components/sysmsg/db/db-sql-exec-progress';
 
 export const dbApi = {
     // 获取权限列表

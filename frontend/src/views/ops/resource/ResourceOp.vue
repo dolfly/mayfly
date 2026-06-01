@@ -54,7 +54,7 @@
                         <div
                             v-for="tab in resourceTabs"
                             :key="tab.key"
-                            class="group flex items-center gap-1 px-2.5 py-1 rounded cursor-pointer text-xs whitespace-nowrap shrink-0 transition-all duration-200 ease-in-out"
+                            class="group flex items-center gap-1 px-2.5 py-1 rounded cursor-pointer text-sm whitespace-nowrap shrink-0 transition-all duration-200 ease-in-out"
                             :class="[
                                 activeResourceOpTabKey === tab.key
                                     ? 'text-(--el-color-primary) bg-(--el-color-primary-light-9) border border-(--el-color-primary-light-5)'
@@ -71,9 +71,9 @@
                                     v-if="tab.tabComponentProps?.icon"
                                     :name="tab.tabComponentProps.icon.name"
                                     :color="tab.tabComponentProps.icon.color"
-                                    class="text-xs shrink-0"
+                                    class="text-sm shrink-0"
                                 />
-                                <span class="max-w-35 overflow-hidden text-ellipsis" :title="$t(tab.name)">{{ $t(tab.name) }}</span>
+                                <span class="max-w-40 overflow-hidden text-ellipsis" :title="$t(tab.name)">{{ $t(tab.name) }}</span>
                             </template>
                             <!-- 激活的tab：始终显示所有按钮 -->
                             <span v-if="activeResourceOpTabKey === tab.key" class="inline-flex items-center gap-0.5 ml-1 shrink-0">
@@ -147,7 +147,7 @@ import { isPrefixSubsequence } from '@/common/utils/string';
 import { Contextmenu, ContextmenuItem } from '@/components/contextmenu';
 import SvgIcon from '@/components/svgIcon/index.vue';
 import { useAutoOpenResource } from '@/store/autoOpenResource';
-import { ResourceOpCtx } from '@/views/ops/component/tag';
+import { ResourceOpCtx } from '@/views/ops/resource/resourceOp';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import BaseTreeNode from './BaseTreeNode.vue';
@@ -202,7 +202,6 @@ const activeResourceTab = computed(() => {
 });
 
 const resourceTabs = computed(() => {
-    // 过滤掉 hideTab 为 true 的 tab（纯弹窗组件不显示 tab 标签）
     return Array.from(allResourceOpTabs.values());
 });
 
@@ -378,7 +377,10 @@ const treeNodeClick = async (data: any, node: any) => {
     }
 
     setTimeout(() => {
-        if (activeResourceOpTabKey.value) {
+        // console.log('activeResourceOpTabKey ', activeResourceOpTabKey.value, data.key);
+        const activateKey = activeResourceOpTabKey.value;
+        const nodeDataKey = data.key;
+        if (activateKey && (nodeDataKey?.startsWith(activateKey) || nodeDataKey == activateKey || activateKey?.startsWith(nodeDataKey))) {
             resourceComponentsNodeKey.value[activeResourceOpTabKey.value] = data.key;
         }
     }, 50);

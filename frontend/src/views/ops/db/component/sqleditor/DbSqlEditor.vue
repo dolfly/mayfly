@@ -56,7 +56,14 @@
                     >
                         <el-tab-pane class="h-full!" closable v-for="dt in state.execResTabs" :label="dt.id" :name="dt.id" :key="dt.id">
                             <template #label>
-                                <el-popover :show-after="1000" placement="top-start" :title="$t('db.execInfo')" trigger="hover" :width="300" :teleported="false">
+                                <el-popover
+                                    :show-after="1000"
+                                    placement="top-start"
+                                    :title="$t('db.execInfo')"
+                                    trigger="hover"
+                                    :width="300"
+                                    :teleported="false"
+                                >
                                     <template #reference>
                                         <div>
                                             <span>
@@ -294,7 +301,7 @@ const onResizeTableHeight = (index: number, sizes: number[]) => {
         editorHeight = plitpaneHeight / 2;
     }
 
-    let tableDataHeight = plitpaneHeight - editorHeight - 47;
+    let tableDataHeight = plitpaneHeight - editorHeight - 15;
 
     state.editorSize = editorHeight;
     state.tableDataHeight = tableDataHeight + 'px';

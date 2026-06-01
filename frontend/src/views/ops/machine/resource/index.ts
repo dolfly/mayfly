@@ -31,7 +31,7 @@ export const NodeTypeMachineTag = new NodeType(TagTreeNode.TagPath).withLoadNode
     return res?.list
         .sort((a: any, b: any) => a.name.localeCompare(b.name))
         .map((x: any) =>
-            TagTreeNode.new(node, x.code, x.name, NodeTypeMachine)
+            TagTreeNode.new(node, `machine.${x.code}`, x.name, NodeTypeMachine)
                 .withParams(x)
                 .withDisabled(x.status == -1 && x.protocol == MachineProtocolEnum.Ssh.value)
                 .withIcon(MachineIcon)
@@ -43,7 +43,7 @@ export const NodeTypeMachine = new NodeType(11)
         const machine = node.params;
         const authCerts = machine.authCerts;
         return authCerts.map((x: any) =>
-            TagTreeNode.new(node, x.name, x.username, NodeTypeAuthCert)
+            TagTreeNode.new(node, `${node.key}.${x.name}`, x.username, NodeTypeAuthCert)
                 .withNodeComponent(NodeMachineAc)
                 .withParams({ ...machine, selectAuthCert: x })
                 .withDisabled(machine.status == -1 && machine.protocol == MachineProtocolEnum.Ssh.value)
@@ -107,7 +107,7 @@ export const NodeTypeAuthCert = new NodeType(12)
     .withNodeDblclickFunc(async (node: TagTreeNode) => {
         const m = node.params;
 
-        const key = `machine_term_${m.code}_${m.selectAuthCert.name}_${new Date().getTime()}`;
+        const key = `machine.${m.code}.${m.selectAuthCert.name}.${new Date().getTime()}`;
         createResourceOpTab({
             key,
             name: `${m.selectAuthCert.username}@${m.name}`,
@@ -134,7 +134,7 @@ export const NodeTypeAuthCert = new NodeType(12)
             .withOnClick(async (node: TagTreeNode) => {
                 const m = node.params;
 
-                const key = `machine_term_${m.code}_${m.selectAuthCert.name}_${new Date().getTime()}`;
+                const key = `machine.${m.code}.${m.selectAuthCert.name}.${new Date().getTime()}`;
                 createResourceOpTab({
                     key,
                     name: `${m.selectAuthCert.username}@${m.name}`,
@@ -185,19 +185,21 @@ export const NodeTypeAuthCert = new NodeType(12)
             }),
         new ContextmenuItem('files', 'machine.fileManage').withIcon('FolderOpened').withOnClick(async (node: any) => {
             const m = node.params;
+            const acName = m.selectAuthCert.name;
 
             // 直接打开文件管理 tab，FileTab 内部会处理配置选择
+            const tabKey = `machine.${m.code}.${acName}`;
             createResourceOpTab({
-                key: `machine_file_${m.code}`,
+                key: tabKey,
                 name: `${m.selectAuthCert.username}@${m.name}`,
                 component: FileTab,
                 tabComponentProps: {
                     icon: FileIcon,
                 },
                 componentProps: {
-                    tabKey: `machine_file_${m.code}`,
+                    tabKey: tabKey,
                     machineId: m.id,
-                    authCertName: m.selectAuthCert.name,
+                    authCertName: acName,
                     protocol: m.protocol,
                 },
             });

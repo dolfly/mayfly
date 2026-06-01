@@ -404,7 +404,7 @@ export class DbInst {
      * @param inst 数据库实例，后端返回的列表接口中的信息
      * @returns DbInst
      */
-    static async getOrNewInst(inst: any) {
+    static getOrNewInst(inst: any) {
         if (!inst) {
             throw new Error('inst不能为空');
         }
@@ -427,7 +427,9 @@ export class DbInst {
         dbInst.databases = inst.databases;
 
         if (dbInst.databases?.[0]) {
-            dbInst.version = await dbApi.getCompatibleDbVersion.request({ id: inst.id, db: dbInst.databases?.[0] });
+            dbApi.getCompatibleDbVersion.request({ id: inst.id, db: dbInst.databases?.[0] }).then((version) => {
+                dbInst.version = version;
+            });
         }
 
         dbInstCache.set(dbInst.id, dbInst);

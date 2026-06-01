@@ -39,36 +39,14 @@ const SqlIcon = {
     color: '#f56c6c',
 };
 
-export const DbDataOpComp = {
-    name: 'tag.dbDataOp',
-    component: DbDataOp,
-    icon: DbIcon,
-};
-
-const getDbOpTab = async (p: any) => {
-    // const p = node.params;
-    const tabKey = `db_${p.id}_${p.db}`;
+const getDbOpTab = async (params: any) => {
+    const tabKey = `db.${params.instCode}.${params.dbCode}.${params.db}`;
     return await createResourceOpTab({
         key: tabKey,
-        name: `${p.name}/${p.db}`,
+        name: `${params.name}/${params.db}`,
         component: DbDataOp,
-        tabComponentProps: {
-            icon: { name: getDbDialect(p.type)?.getInfo().icon },
-        },
-    });
-};
-
-const getDbOpTabCompInst = async (p: any) => {
-    return (await getDbOpTab(p)).componentInstance;
-};
-
-// node节点点击时，触发改变db事件
-const nodeClickChangeDb = async (nodeData: TagTreeNode) => {
-    const params = nodeData.params;
-    if (params.db) {
-        const compRef = await getDbOpTabCompInst(params);
-        compRef.onChangeDb(
-            {
+        componentProps: {
+            dbInfo: {
                 id: params.id,
                 host: `${params.host}`,
                 name: params.name,
@@ -76,9 +54,16 @@ const nodeClickChangeDb = async (nodeData: TagTreeNode) => {
                 tagPath: params.tagPath,
                 databases: params.dbs,
             },
-            params.db
-        );
-    }
+            db: params.db,
+        },
+        tabComponentProps: {
+            icon: { name: getDbDialect(params.type)?.getInfo().icon },
+        },
+    });
+};
+
+const getDbOpTabCompInst = async (params: any) => {
+    return (await getDbOpTab(params)).componentInstance;
 };
 
 const ContextmenuItemRefresh = new ContextmenuItem('refresh', 'common.refresh')
@@ -100,7 +85,7 @@ export const NodeTypeDbInst = new NodeType(TagResourceTypeEnum.DbInstance.value)
     return dbInstances?.map((x: any) => {
         x.tagPath = tagPath;
         x.instCode = x.code;
-        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeDbConf).withParams(x).withNodeComponent(NodeDbInst);
+        return TagTreeNode.new(parentNode, `db.${x.code}`, x.name, NodeTypeDbConf).withParams(x).withNodeComponent(NodeDbInst);
     });
 });
 
@@ -128,7 +113,7 @@ export const NodeTypeDbConf = new NodeType(TagResourceTypeEnum.Db.value)
             x.username = authCerts[x.authCertName]?.username;
             x.instCode = params.instCode;
             x.dbCode = x.code;
-            return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeDbs).withParams(x).withIcon(DbIcon).withNodeComponent(NodeDb);
+            return TagTreeNode.new(parentNode, `${parentNode.key}.${x.code}`, x.name, NodeTypeDbs).withParams(x).withIcon(DbIcon).withNodeComponent(NodeDb);
         });
     })
     .withContextMenuItems([ContextmenuItemRefresh]);
@@ -159,37 +144,32 @@ export const NodeTypeDbs = new NodeType(222).withLoadNodesFunc(async (parentNode
 });
 
 // 数据库节点
-export const NodeTypeDb = new NodeType(223)
-    .withContextMenuItems([ContextmenuItemRefresh])
-    .withLoadNodesFunc(async (parentNode: TagTreeNode) => {
-        const params = parentNode.params;
-        params.parentKey = parentNode.key;
-        // pg类数据库会多一层schema
-        if (schemaDbTypes.includes(params.type)) {
-            const { id, db } = params;
-            const schemaNames = await dbApi.pgSchemas.request({ id, db });
-            return schemaNames.map((sn: any) => {
-                // 将db变更为  db/schema;
-                const nParams = { ...params };
-                nParams.schema = sn;
-                nParams.db = nParams.db + '/' + sn;
-                nParams.dbs = schemaNames;
-                return TagTreeNode.new(parentNode, `${params.id}.${params.db}.schema.${sn}`, sn, NodeTypePostgresSchema)
-                    .withParams(nParams)
-                    .withIcon(SchemaIcon);
-            });
-        }
+export const NodeTypeDb = new NodeType(223).withContextMenuItems([ContextmenuItemRefresh]).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
+    const params = parentNode.params;
+    params.parentKey = parentNode.key;
+    // pg类数据库会多一层schema
+    if (schemaDbTypes.includes(params.type)) {
+        const { id, db } = params;
+        const schemaNames = await dbApi.pgSchemas.request({ id, db });
+        return schemaNames.map((sn: any) => {
+            // 将db变更为  db/schema;
+            const nParams = { ...params };
+            nParams.schema = sn;
+            nParams.db = nParams.db + '/' + sn;
+            // nParams.dbs = schemaNames;
+            return TagTreeNode.new(parentNode, `${parentNode.key}/${sn}`, sn, NodeTypePostgresSchema).withParams(nParams).withIcon(SchemaIcon);
+        });
+    }
 
-        return getNodeTypeTables(parentNode);
-    })
-    .withNodeClickFunc(nodeClickChangeDb);
+    return getNodeTypeTables(parentNode);
+});
 
 export const getNodeTypeTables = (parentNode: TagTreeNode) => {
     const params = parentNode.params;
-    let tableKey = `${params.id}.${params.db}.table-menu`;
-    let sqlKey = getSqlMenuNodeKey(params.id, params.db);
+    let tableKey = `${parentNode.key}.table-menu`;
+    let sqlKey = `${parentNode.key}.sql-menu`;
     return [
-        TagTreeNode.new(parentNode, `${params.id}.${params.db}.table-menu`, i18n.global.t('db.table'), NodeTypeTableMenu)
+        TagTreeNode.new(parentNode, tableKey, i18n.global.t('db.table'), NodeTypeTableMenu)
             .withParams({
                 ...params,
                 key: tableKey,
@@ -203,14 +183,11 @@ export const getNodeTypeTables = (parentNode: TagTreeNode) => {
 };
 
 // postgres schema模式
-export const NodeTypePostgresSchema = new NodeType(224)
-    .withContextMenuItems([ContextmenuItemRefresh])
-    .withLoadNodesFunc(async (parentNode: TagTreeNode) => {
-        const params = parentNode.params;
-        params.parentKey = parentNode.key;
-        return getNodeTypeTables(parentNode);
-    })
-    .withNodeClickFunc(nodeClickChangeDb);
+export const NodeTypePostgresSchema = new NodeType(224).withContextMenuItems([ContextmenuItemRefresh]).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
+    const params = parentNode.params;
+    params.parentKey = parentNode.key;
+    return getNodeTypeTables(parentNode);
+});
 
 // 数据库表菜单节点
 const NodeTypeTableMenu = new NodeType(4)
@@ -234,20 +211,15 @@ const NodeTypeTableMenu = new NodeType(4)
         const compRef = await getDbOpTabCompInst(params);
         // // 获取当前库的所有表信息
         const tables = await compRef.loadTables(params);
-        let { id, db, type, schema, version } = params;
         let dbTableSize = 0;
         const tablesNode = tables.map((x: any) => {
             const tableSize = x.dataLength + x.indexLength;
             dbTableSize += tableSize;
-            const key = `${id}.${db}.${x.tableName}`;
+            const key = `${parentNode.key}.${x.tableName}`;
             return TagTreeNode.new(parentNode, key, x.tableName, NodeTypeTable)
                 .withIsLeaf(true)
                 .withParams({
-                    id,
-                    db,
-                    type,
-                    schema,
-                    version,
+                    ...params,
                     key: key,
                     parentKey: parentNode.key,
                     tableName: x.tableName,
@@ -262,28 +234,22 @@ const NodeTypeTableMenu = new NodeType(4)
         parentNode.params.dbTableSize = dbTableSize == 0 ? '' : formatByteSize(dbTableSize);
         return tablesNode;
     });
-// .withNodeDblclickFunc((node: TagTreeNode) => {
-//     const params = node.params;
-//     addTablesOpTab({ id: params.id, db: params.db, type: params.type, version: params.version, nodeKey: node.key });
-// });
 
 // 数据库sql模板菜单节点
-const NodeTypeSqlMenu = new NodeType(225)
-    .withLoadNodesFunc(async (parentNode: TagTreeNode) => {
-        const params = parentNode.params;
-        const id = params.id;
-        const db = params.db;
-        const dbs = params.dbs;
-        // 加载用户保存的sql脚本
-        const sqls = await dbApi.getSqlNames.request({ id: id, db: db });
-        return sqls.map((x: any) => {
-            return TagTreeNode.new(parentNode, `${id}.${db}.${x.name}`, x.name, NodeTypeSql)
-                .withIsLeaf(true)
-                .withParams({ id, db, dbs, sqlName: x.name })
-                .withIcon(SqlIcon);
-        });
-    })
-    .withNodeClickFunc(nodeClickChangeDb);
+const NodeTypeSqlMenu = new NodeType(225).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
+    const params = parentNode.params;
+    const id = params.id;
+    const db = params.db;
+    const dbs = params.dbs;
+    // 加载用户保存的sql脚本
+    const sqls = await dbApi.getSqlNames.request({ id: id, db: db });
+    return sqls.map((x: any) => {
+        return TagTreeNode.new(parentNode, `${parentNode.key}.${x.name}`, x.name, NodeTypeSql)
+            .withIsLeaf(true)
+            .withParams({ id, db, dbs, sqlName: x.name })
+            .withIcon(SqlIcon);
+    });
+});
 
 // 表节点类型
 const NodeTypeTable = new NodeType(226)
@@ -320,10 +286,6 @@ const NodeTypeSql = new NodeType(227)
             .withIcon('delete')
             .withOnClick(async (node: TagTreeNode) => (await getDbOpTabCompInst(node.params))?.deleteSql(node.params.id, node.params.db, node.params.sqlName)),
     ]);
-
-const getSqlMenuNodeKey = (dbId: number, db: string) => {
-    return `${dbId}.${db}.sql-menu`;
-};
 
 export default {
     order: 2,

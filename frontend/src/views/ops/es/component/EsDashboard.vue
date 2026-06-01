@@ -181,13 +181,13 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
-import { defineAsyncComponent, nextTick, onMounted, reactive, ref, watch } from 'vue';
-import { esApi } from '@/views/ops/es/api';
 import { formatByteSize } from '@/common/utils/format';
+import { esApi } from '@/views/ops/es/api';
 import dayjs from 'dayjs';
+import { defineAsyncComponent, nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
-const EsIndexData = defineAsyncComponent(() => import('../resource/EsIndexData.vue'));
+const EsIndexData = defineAsyncComponent(() => import('./EsIndexData.vue'));
 const EsIndexManage = defineAsyncComponent(() => import('./EsIndexManage.vue'));
 
 const { t } = useI18n();

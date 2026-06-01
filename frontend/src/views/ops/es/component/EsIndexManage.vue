@@ -21,76 +21,93 @@
                         @sort-change="onSortChange"
                         :default-sort="{ prop: 'index', order: 'ascending' }"
                     >
-            <el-table-column prop="index" :label="t('es.indexName')" min-width="200" sortable="custom" show-overflow-tooltip>
-                <template #default="{ row }">
-                    <el-link type="primary" :underline="false" @click="emit('viewData', row.index)">{{ row.index }}</el-link>
-                </template>
-            </el-table-column>
-            <el-table-column :label="t('es.aliases')" min-width="180">
-                <template #default="{ row }">
-                    <el-space wrap :size="4">
-                        <el-tag
-                            v-for="alias in (aliasesMap[row.index] || [])"
-                            :key="alias"
-                            closable
-                            size="small"
-                            type="info"
-                            @close="onRemoveAlias(row.index, alias)"
-                        >{{ alias }}</el-tag>
-                        <el-button link type="primary" size="small" @click="onAddAlias(row)">
-                            <el-icon><Plus /></el-icon>
-                        </el-button>
-                    </el-space>
-                </template>
-            </el-table-column>
-            <el-table-column prop="health" :label="t('es.health')" width="100" sortable="custom" align="center">
-                <template #default="{ row }">
-                    <el-tag size="small" :type="getHealthTagType(row.health)">{{ row.health }}</el-tag>
-                </template>
-            </el-table-column>
-            <el-table-column prop="status" :label="t('es.status')" width="100" sortable="custom" align="center">
-                <template #default="{ row }">
-                    <el-tag size="small" :type="row.status === 'open' ? 'success' : 'danger'">{{ row.status }}</el-tag>
-                </template>
-            </el-table-column>
-            <el-table-column prop="pri" label="pri" width="70" align="center" />
-            <el-table-column prop="rep" label="rep" width="70" align="center" />
-            <el-table-column prop="docs.count" :label="t('es.docs')" width="120" sortable="custom" align="right">
-                <template #default="{ row }">{{ row['docs.count'] ?? '-' }}</template>
-            </el-table-column>
-            <el-table-column prop="store.size" :label="t('es.size')" width="120" sortable="custom" align="right" />
-            <el-table-column :label="t('common.operation')" width="260" fixed="right" align="center">
-                <template #default="{ row }">
-                    <el-button link type="primary" size="small" @click="onViewDetail(row)">{{ t('es.indexDetail') }}</el-button>
-                    <el-dropdown trigger="click" @command="(cmd: string) => onRowCommand(cmd, row)">
-                        <el-button link type="primary" size="small">
-                            {{ t('common.more') }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-                        </el-button>
-                        <template #dropdown>
-                            <el-dropdown-menu>
-                                <el-dropdown-item command="copyName" :icon="CopyDocument">{{ t('es.contextmenu.index.copyName') }}</el-dropdown-item>
-                                <el-dropdown-item command="refresh" :icon="Refresh">{{ t('es.contextmenu.index.refresh') }}</el-dropdown-item>
-                                <el-dropdown-item command="flush" :icon="Refresh">{{ t('es.contextmenu.index.flush') }}</el-dropdown-item>
-                                <el-dropdown-item command="clearCache" :icon="Refresh">{{ t('es.contextmenu.index.clearCache') }}</el-dropdown-item>
-                                <el-dropdown-item command="reindex" :icon="Switch">{{ t('es.Reindex') }}</el-dropdown-item>
-                                <el-dropdown-item v-if="row.status === 'open'" command="close" :icon="Close">{{ t('es.contextmenu.index.Close') }}</el-dropdown-item>
-                                <el-dropdown-item v-else command="open" :icon="Select">{{ t('es.contextmenu.index.Open') }}</el-dropdown-item>
-                                <el-dropdown-item command="delete" :icon="Delete" divided>{{ t('common.delete') }}</el-dropdown-item>
-                            </el-dropdown-menu>
-                        </template>
-                    </el-dropdown>
-                </template>
-            </el-table-column>
+                        <el-table-column prop="index" :label="t('es.indexName')" min-width="200" sortable="custom" show-overflow-tooltip>
+                            <template #default="{ row }">
+                                <el-link type="primary" underline="never" @click="emit('viewData', row.index)">{{ row.index }}</el-link>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="t('es.aliases')" min-width="180">
+                            <template #default="{ row }">
+                                <el-space wrap :size="4">
+                                    <el-tag
+                                        v-for="alias in aliasesMap[row.index] || []"
+                                        :key="alias"
+                                        closable
+                                        size="small"
+                                        type="info"
+                                        @close="onRemoveAlias(row.index, alias)"
+                                        >{{ alias }}</el-tag
+                                    >
+                                    <el-button link type="primary" size="small" @click="onAddAlias(row)">
+                                        <el-icon><Plus /></el-icon>
+                                    </el-button>
+                                </el-space>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="health" :label="t('es.health')" width="100" sortable="custom" align="center">
+                            <template #default="{ row }">
+                                <el-tag size="small" :type="getHealthTagType(row.health)">{{ row.health }}</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="status" :label="t('es.status')" width="100" sortable="custom" align="center">
+                            <template #default="{ row }">
+                                <el-tag size="small" :type="row.status === 'open' ? 'success' : 'danger'">{{ row.status }}</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="pri" label="pri" width="70" align="center" />
+                        <el-table-column prop="rep" label="rep" width="70" align="center" />
+                        <el-table-column prop="docs.count" :label="t('es.docs')" width="120" sortable="custom" align="right">
+                            <template #default="{ row }">{{ row['docs.count'] ?? '-' }}</template>
+                        </el-table-column>
+                        <el-table-column prop="store.size" :label="t('es.size')" width="120" sortable="custom" align="right" />
+                        <el-table-column :label="t('common.operation')" width="260" fixed="right" align="center">
+                            <template #default="{ row }">
+                                <el-button link type="primary" size="small" @click="onViewDetail(row)">{{ t('es.indexDetail') }}</el-button>
+                                <el-dropdown trigger="click" @command="(cmd: string) => onRowCommand(cmd, row)">
+                                    <el-button link type="primary" size="small">
+                                        {{ t('common.more') }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                                    </el-button>
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item command="copyName" :icon="CopyDocument">{{
+                                                t('es.contextmenu.index.copyName')
+                                            }}</el-dropdown-item>
+                                            <el-dropdown-item command="refresh" :icon="Refresh">{{ t('es.contextmenu.index.refresh') }}</el-dropdown-item>
+                                            <el-dropdown-item command="flush" :icon="Refresh">{{ t('es.contextmenu.index.flush') }}</el-dropdown-item>
+                                            <el-dropdown-item command="clearCache" :icon="Refresh">{{ t('es.contextmenu.index.clearCache') }}</el-dropdown-item>
+                                            <el-dropdown-item command="reindex" :icon="Switch">{{ t('es.Reindex') }}</el-dropdown-item>
+                                            <el-dropdown-item v-if="row.status === 'open'" command="close" :icon="Close">{{
+                                                t('es.contextmenu.index.Close')
+                                            }}</el-dropdown-item>
+                                            <el-dropdown-item v-else command="open" :icon="Select">{{ t('es.contextmenu.index.Open') }}</el-dropdown-item>
+                                            <el-dropdown-item command="delete" :icon="Delete" divided>{{ t('common.delete') }}</el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
+                            </template>
+                        </el-table-column>
                     </el-table>
                 </template>
             </el-auto-resizer>
         </div>
 
         <!-- 查看/编辑 Mapping 对话框 -->
-        <el-drawer v-model="mappingDrawer.visible" :title="`${t('es.indexMapping')} - ${mappingDrawer.idxName}`" size="55%" :append-to-body="false" :destroy-on-close="false">
+        <el-drawer
+            v-model="mappingDrawer.visible"
+            :title="`${t('es.indexMapping')} - ${mappingDrawer.idxName}`"
+            size="55%"
+            :append-to-body="false"
+            :destroy-on-close="false"
+        >
             <el-auto-resizer>
                 <template #default="{ height, width }">
-                    <monaco-editor v-model="mappingDrawer.content" language="json" :height="height - 60 + 'px'" :width="width + 'px'" :options="{ tabSize: 2, readOnly: !mappingDrawer.editable }" />
+                    <monaco-editor
+                        v-model="mappingDrawer.content"
+                        language="json"
+                        :height="height - 60 + 'px'"
+                        :width="width + 'px'"
+                        :options="{ tabSize: 2, readOnly: !mappingDrawer.editable }"
+                    />
                 </template>
             </el-auto-resizer>
             <template #footer>
@@ -98,7 +115,9 @@
                     <el-button @click="mappingDrawer.editable = !mappingDrawer.editable">
                         {{ mappingDrawer.editable ? t('common.cancel') : t('common.edit') }}
                     </el-button>
-                    <el-button v-if="mappingDrawer.editable" type="primary" @click="onSaveMapping" :loading="mappingDrawer.saving">{{ t('common.save') }}</el-button>
+                    <el-button v-if="mappingDrawer.editable" type="primary" @click="onSaveMapping" :loading="mappingDrawer.saving">{{
+                        t('common.save')
+                    }}</el-button>
                 </el-space>
             </template>
         </el-drawer>
@@ -225,11 +244,7 @@ const fetchVersion = async () => {
 const fetchIndices = async () => {
     loading.value = true;
     try {
-        const res = await esApi.proxyReq(
-            'get',
-            props.instId,
-            `/_cat/indices/?h=index,health,status,uuid,pri,rep,docs.count,docs.deleted,store.size,sc,cd`
-        );
+        const res = await esApi.proxyReq('get', props.instId, `/_cat/indices/?h=index,health,status,uuid,pri,rep,docs.count,docs.deleted,store.size,sc,cd`);
         const list = res || [];
         indices.value = showSysIndex.value ? list : list.filter((idx: any) => !idx.index.startsWith('.'));
         // Fetch aliases for all indices
@@ -421,5 +436,4 @@ const onRemoveAlias = async (idxName: string, alias: string) => {
     flex: 1;
     min-height: 0;
 }
-
 </style>

@@ -1,7 +1,9 @@
 import { ResourceTypeEnum } from '@/common/commonEnum';
-import { defineAsyncComponent } from 'vue';
-import { NodeType, TagTreeNode, ResourceComponentConfig, ResourceConfig } from '@/views/ops/component/tag';
+import { NodeType, TagTreeNode } from '@/views/ops/component/tag';
 import { dockerApi } from '@/views/ops/docker/api';
+import type { ResourceConfig } from '@/views/ops/resource/resource';
+import { createResourceOpTab } from '@/views/ops/resource/resourceOp';
+import { defineAsyncComponent } from 'vue';
 
 const ContainerConfList = defineAsyncComponent(() => import('../ContainerConfList.vue'));
 const ContainerOp = defineAsyncComponent(() => import('./ContainerOp.vue'));
@@ -11,10 +13,18 @@ const Icon = {
     color: ResourceTypeEnum.Container.extra.iconColor,
 };
 
-export const ContainerOpComp: ResourceComponentConfig = {
-    name: 'tag.containerOp',
-    component: ContainerOp,
-    icon: Icon,
+const getContainerOpTab = async (container: any) => {
+    const tabKey = `container_${container.id}`;
+    return await createResourceOpTab({
+        key: tabKey,
+        name: container.name,
+        component: ContainerOp,
+        tabComponentProps: { icon: Icon },
+    });
+};
+
+const getContainerOpTabCompInst = async (container: any) => {
+    return (await getContainerOpTab(container)).componentInstance;
 };
 
 export const NodeTypeContainerTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(async (node: TagTreeNode) => {
@@ -28,14 +38,7 @@ export const NodeTypeContainerTag = new NodeType(TagTreeNode.TagPath).withLoadNo
 
 const NodeTypeContainer = new NodeType(11).withNodeClickFunc(async (node: TagTreeNode) => {
     const container = node.params;
-    const tabKey = `container_${container.id}`;
-    const tabLabel = container.name;
-    const compRef = await node.ctx?.addResourceComponent({
-        ...ContainerOpComp,
-        tabKey,
-        tabLabel,
-        tabProps: { containerId: container.id, tabKey },
-    });
+    const compRef = await getContainerOpTabCompInst(container);
     compRef?.init?.(container.id);
 });
 

@@ -100,7 +100,7 @@ import { TableColumn } from '@/components/pagetable';
 import PageTable from '@/components/pagetable/PageTable.vue';
 import { SearchItem, OptionsApi } from '@/components/pagetable/SearchForm';
 import { Msg, useI18nCreateTitle, useI18nDeleteConfirm, useI18nEditTitle } from '@/hooks/useI18n';
-import {defineAsyncComponent, nextTick, onMounted, reactive, ref, Ref, toRefs, watch} from 'vue';
+import { defineAsyncComponent, nextTick, onMounted, reactive, ref, Ref, toRefs, watch } from 'vue';
 import { getMachineTerminalSocketUrl, machineApi } from './api';
 import { ScriptResultEnum, ScriptTypeEnum } from './enums';
 
@@ -214,7 +214,7 @@ const run = async (script: any) => {
     if (script.type == ScriptResultEnum.Result.value || noResult) {
         const res = await machineApi.runScript.request({
             machineId: props.machineId,
-            ac: props.authCertName,
+            acName: props.authCertName,
             scriptId: script.id,
             params: JSON.stringify(state.scriptParamsDialog.params),
         });
@@ -293,8 +293,8 @@ const handleClose = () => {
     state.scriptParamsDialog.paramsFormItem = [];
 };
 
-onMounted(()=>{
-    nextTick(getScripts)
-})
+onMounted(() => {
+    nextTick(getScripts);
+});
 </script>
 <style lang="scss"></style>

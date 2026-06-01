@@ -173,7 +173,7 @@ import { Msg, useI18nCreateTitle, useI18nDeleteConfirm, useI18nEditTitle } from 
 import { ResourceOpCtx } from '@/views/ops/component/tag';
 import SqlExecBox from '@/views/ops/db/component/sqleditor/SqlExecBox';
 import { DbDataOpComp } from '@/views/ops/db/resource';
-import { ResourceOpCtxKey } from '@/views/ops/resource/resource';
+import { ResourceOpCtxKey } from '@/views/ops/resource/resourceOp';
 import { useEventListener, useStorage } from '@vueuse/core';
 import { ElCheckbox, ElMessageBox } from 'element-plus';
 import { format as sqlFormatter } from 'sql-formatter';
@@ -652,7 +652,12 @@ const loadTables = async (dbInfo: any) => {
     return tables;
 };
 
+const onRefresh = () => {
+    state.tabs.clear();
+};
+
 defineExpose({
+    onRefresh,
     onChangeDb: changeDb,
     loadTables,
     loadTableData,

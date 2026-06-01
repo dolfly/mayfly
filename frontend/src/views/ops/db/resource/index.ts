@@ -1,14 +1,16 @@
 import { ContextmenuItem } from '@/components/contextmenu';
 
-import { NodeType, TagTreeNode, ResourceConfig } from '../../component/tag';
 import { ResourceTypeEnum, TagResourceTypeEnum } from '@/common/commonEnum';
-import { defineAsyncComponent } from 'vue';
-import { dbApi } from '../api';
-import { sleep } from '@/common/utils/loading';
-import { DbInst } from '../db';
-import { schemaDbTypes, getDbDialect } from '../dialect/index';
-import { i18n } from '@/i18n';
 import { formatByteSize } from '@/common/utils/format';
+import { sleep } from '@/common/utils/loading';
+import { i18n } from '@/i18n';
+import type { ResourceConfig } from '@/views/ops/resource/resource';
+import { defineAsyncComponent } from 'vue';
+import { NodeType, TagTreeNode } from '../../component/tag';
+import { createResourceOpTab } from '../../resource/resourceOp';
+import { dbApi } from '../api';
+import { DbInst } from '../db';
+import { getDbDialect, schemaDbTypes } from '../dialect/index';
 
 const DbInstList = defineAsyncComponent(() => import('../InstanceList.vue'));
 const DbDataOp = defineAsyncComponent(() => import('./DbDataOp.vue'));
@@ -43,25 +45,28 @@ export const DbDataOpComp = {
     icon: DbIcon,
 };
 
-// 辅助函数：构造带 tabKey 的 DB 组件配置
-const dbCompWithTab = (node: TagTreeNode) => {
-    const p = node.params;
-    // 根据数据库类型获取对应方言图标（mysql/postgresql/clickhouse等）
-    const icon = p.type ? { name: getDbDialect(p.type).getInfo().icon } : DbIcon;
-    return {
-        ...DbDataOpComp,
-        icon,
-        tabKey: `db_${p.id}`,
-        tabLabel: p.name || `DB_${p.id}`,
-        tabProps: { tabKey: `db_${p.id}` },
-    };
+const getDbOpTab = async (p: any) => {
+    // const p = node.params;
+    const tabKey = `db_${p.id}_${p.db}`;
+    return await createResourceOpTab({
+        key: tabKey,
+        name: `${p.name}/${p.db}`,
+        component: DbDataOp,
+        tabComponentProps: {
+            icon: { name: getDbDialect(p.type)?.getInfo().icon },
+        },
+    });
+};
+
+const getDbOpTabCompInst = async (p: any) => {
+    return (await getDbOpTab(p)).componentInstance;
 };
 
 // node节点点击时，触发改变db事件
 const nodeClickChangeDb = async (nodeData: TagTreeNode) => {
     const params = nodeData.params;
     if (params.db) {
-        const compRef = await nodeData.ctx?.addResourceComponent(dbCompWithTab(nodeData));
+        const compRef = await getDbOpTabCompInst(params);
         compRef.onChangeDb(
             {
                 id: params.id,
@@ -78,7 +83,7 @@ const nodeClickChangeDb = async (nodeData: TagTreeNode) => {
 
 const ContextmenuItemRefresh = new ContextmenuItem('refresh', 'common.refresh')
     .withIcon('RefreshRight')
-    .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).reloadNode(node.key));
+    .withOnClick(async (node: TagTreeNode) => (await getDbOpTabCompInst(node.params))?.reloadNode(node.key));
 
 // 数据库实例节点类型
 export const NodeTypeDbInst = new NodeType(TagResourceTypeEnum.DbInstance.value).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
@@ -212,11 +217,11 @@ const NodeTypeTableMenu = new NodeType(4)
     .withContextMenuItems([
         ContextmenuItemRefresh,
         new ContextmenuItem('createTable', 'db.createTable').withIcon('Plus').withOnClick(async (parentNode: TagTreeNode) => {
-            (await parentNode.ctx?.addResourceComponent(dbCompWithTab(parentNode)))?.onEditTable(parentNode);
+            (await getDbOpTabCompInst(parentNode.params))?.onEditTable(parentNode);
         }),
         new ContextmenuItem('tablesOp', 'db.tableOp').withIcon('Setting').withOnClick(async (parentNode: TagTreeNode) => {
             const params = parentNode.params;
-            (await parentNode.ctx?.addResourceComponent(dbCompWithTab(parentNode))).addTablesOpTab({
+            (await getDbOpTabCompInst(params))?.addTablesOpTab({
                 id: params.id,
                 db: params.db,
                 type: params.type,
@@ -225,8 +230,8 @@ const NodeTypeTableMenu = new NodeType(4)
         }),
     ])
     .withLoadNodesFunc(async (parentNode: TagTreeNode) => {
-        const compRef = await parentNode.ctx?.addResourceComponent(dbCompWithTab(parentNode));
         const params = parentNode.params;
+        const compRef = await getDbOpTabCompInst(params);
         // // 获取当前库的所有表信息
         const tables = await compRef.loadTables(params);
         let { id, db, type, schema, version } = params;
@@ -285,38 +290,35 @@ const NodeTypeTable = new NodeType(226)
     .withContextMenuItems([
         new ContextmenuItem('copyTable', 'db.copyTable')
             .withIcon('copyDocument')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onCopyTable(node)),
+            .withOnClick(async (node: TagTreeNode) => (await getDbOpTabCompInst(node.params))?.onCopyTable(node)),
         new ContextmenuItem('renameTable', 'db.renameTable')
             .withIcon('edit')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onRenameTable(node)),
+            .withOnClick(async (node: TagTreeNode) => (await getDbOpTabCompInst(node.params))?.onRenameTable(node)),
         new ContextmenuItem('editTable', 'db.editTable')
             .withIcon('edit')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onEditTable(node)),
+            .withOnClick(async (node: TagTreeNode) => (await getDbOpTabCompInst(node.params))?.onEditTable(node)),
         new ContextmenuItem('delTable', 'db.delTable')
             .withIcon('Delete')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onDeleteTable(node)),
+            .withOnClick(async (node: TagTreeNode) => (await getDbOpTabCompInst(node.params))?.onDeleteTable(node)),
         new ContextmenuItem('ddl', 'DDL')
             .withIcon('Document')
-            .withOnClick(async (node: TagTreeNode) => (await node.ctx?.addResourceComponent(dbCompWithTab(node))).onGenDdl(node)),
+            .withOnClick(async (node: TagTreeNode) => (await getDbOpTabCompInst(node.params))?.onGenDdl(node)),
     ])
     .withNodeClickFunc(async (node: TagTreeNode) => {
         const params = node.params;
-        (await node.ctx?.addResourceComponent(dbCompWithTab(node))).loadTableData({ id: params.id, nodeKey: node.key }, params.db, params.tableName);
+        (await getDbOpTabCompInst(node.params))?.loadTableData({ id: params.id, nodeKey: node.key }, params.db, params.tableName);
     });
 
 // sql模板节点类型
 const NodeTypeSql = new NodeType(227)
     .withNodeClickFunc(async (parentNode: TagTreeNode) => {
-        const compRef = await parentNode.ctx?.addResourceComponent(dbCompWithTab(parentNode));
         const params = parentNode.params;
-        compRef.addQueryTab({ id: params.id, nodeKey: parentNode.key, dbs: params.dbs }, params.db, params.sqlName);
+        (await getDbOpTabCompInst(params))?.addQueryTab({ id: params.id, nodeKey: parentNode.key, dbs: params.dbs }, params.db, params.sqlName);
     })
     .withContextMenuItems([
         new ContextmenuItem('delSql', 'common.delete')
             .withIcon('delete')
-            .withOnClick(async (node: TagTreeNode) =>
-                (await node.ctx?.addResourceComponent(dbCompWithTab(node))).deleteSql(node.params.id, node.params.db, node.params.sqlName)
-            ),
+            .withOnClick(async (node: TagTreeNode) => (await getDbOpTabCompInst(node.params))?.deleteSql(node.params.id, node.params.db, node.params.sqlName)),
     ]);
 
 const getSqlMenuNodeKey = (dbId: number, db: string) => {

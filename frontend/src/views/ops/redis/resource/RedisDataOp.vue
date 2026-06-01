@@ -31,7 +31,15 @@
 
                     <el-row :gutter="5" class="mb-1 mt-1">
                         <el-col :span="19">
-                            <el-button :disabled="!scanParam.id || !scanParam.db" :loading="scanBtnLoading" @click="scan(true)" type="success" icon="more" size="small" plain>
+                            <el-button
+                                :disabled="!scanParam.id || !scanParam.db"
+                                :loading="scanBtnLoading"
+                                @click="scan(true)"
+                                type="success"
+                                icon="more"
+                                size="small"
+                                plain
+                            >
                                 {{ $t('redis.loadMore') }}
                             </el-button>
 
@@ -141,9 +149,8 @@ import { Rules } from '@/common/rule';
 import { copyToClipboard } from '@/common/utils/string';
 import { Contextmenu, ContextmenuItem } from '@/components/contextmenu';
 import { Msg, useI18nDeleteConfirm, useI18nFormValidate } from '@/hooks/useI18n';
-import { RedisOpComp } from '@/views/ops/redis/resource';
 import { ElMessageBox } from 'element-plus';
-import { defineAsyncComponent, getCurrentInstance, nextTick, onMounted, reactive, ref, Ref, toRefs, useTemplateRef } from 'vue';
+import { defineAsyncComponent, nextTick, onMounted, reactive, ref, Ref, toRefs, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { redisApi } from '../api';
 import { RedisInst } from '../redis';
@@ -155,6 +162,7 @@ const { t } = useI18n();
 
 const props = defineProps<{
     tabKey?: string;
+    redisInfo: any;
 }>();
 
 const emits = defineEmits(['init']);
@@ -236,7 +244,7 @@ const state = reactive({
 const { scanParam, keyTreeData, newKeyDialog } = toRefs(state);
 
 onMounted(async () => {
-    emits('init', { name: RedisOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
+    onDbClick(props.redisInfo);
 });
 
 const scanBtnLoading = ref(false);
@@ -266,10 +274,7 @@ const scan = async (appendKey = false) => {
     try {
         state.loadingKeyTree = true;
         scanBtnLoading.value = true;
-        const [res] = await Promise.all([
-            redisApi.scan.request(scanParam),
-            new Promise((r) => setTimeout(r, 100)),
-        ]);
+        const [res] = await Promise.all([redisApi.scan.request(scanParam), new Promise((r) => setTimeout(r, 100))]);
         // 追加key，则将新key合并至原keys（加载更多）
         if (appendKey) {
             state.keys = [...state.keys, ...res.keys];

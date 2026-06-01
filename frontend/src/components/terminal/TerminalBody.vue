@@ -418,19 +418,22 @@ const showContextMenu = (event: MouseEvent, selectedText: string) => {
             .withHideFunc(() => !selectedText)
             .withOnClick(() => {
                 downloadSelectedFile(state.contextmenu.selectedItem);
-            }),
+            })
+            .withPermission('machine:file:upload'),
         new ContextmenuItem('uploadFile', 'components.terminal.uploadFileToCurrentDir')
             .withIcon('Upload')
             .withHideFunc(() => !props.machineId || !props.authCertName)
             .withOnClick(() => {
                 triggerFilesUpload();
-            }),
+            })
+            .withPermission('machine:file:upload'),
         new ContextmenuItem('uploadFolder', 'components.terminal.uploadFolderToCurrentDir')
             .withIcon('Upload')
             .withHideFunc(() => !props.machineId || !props.authCertName)
             .withOnClick(() => {
                 triggerFolderUpload();
-            }),
+            })
+            .withPermission('machine:file:upload'),
     ];
 
     // 打开右键菜单

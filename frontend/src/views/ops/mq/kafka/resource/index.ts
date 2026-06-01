@@ -1,8 +1,10 @@
-import { defineAsyncComponent } from 'vue';
-import { NodeType, TagTreeNode, ResourceComponentConfig, ResourceConfig } from '../../../component/tag';
 import { ResourceTypeEnum, TagResourceTypeEnum } from '@/common/commonEnum';
 import { sleep } from '@/common/utils/loading';
+import { NodeType, TagTreeNode } from '@/views/ops/component/tag';
 import { mqApi } from '@/views/ops/mq/api';
+import type { ResourceConfig } from '@/views/ops/resource/resource';
+import { createResourceOpTab } from '@/views/ops/resource/resourceOp';
+import { defineAsyncComponent } from 'vue';
 
 export const KafkaIcon = {
     name: ResourceTypeEnum.MqKafka.extra.icon,
@@ -14,22 +16,23 @@ const KafkaOp = defineAsyncComponent(() => import('./KafkaOp.vue'));
 
 const NodeKafka = defineAsyncComponent(() => import('./NodeKafka.vue'));
 
-export const KafkaOpComp: ResourceComponentConfig = {
-    name: 'tag.mq.kafkaOp',
-    component: KafkaOp,
-    icon: KafkaIcon,
+const getKafkaOpTab = async (kafka: any) => {
+    const tabKey = `kafka_${kafka.id}`;
+    return await createResourceOpTab({
+        key: tabKey,
+        name: kafka.name,
+        component: KafkaOp,
+        tabComponentProps: { icon: KafkaIcon },
+    });
+};
+
+const getKafkaOpTabCompInst = async (kafka: any) => {
+    return (await getKafkaOpTab(kafka)).componentInstance;
 };
 
 const NodeTypeKafka = new NodeType(TagResourceTypeEnum.MqKafka.value).withNodeClickFunc(async (node: TagTreeNode) => {
     const kafka = node.params;
-    const tabKey = `kafka_${kafka.id}`;
-    const tabLabel = kafka.name;
-    const compRef = await node.ctx?.addResourceComponent({
-        ...KafkaOpComp,
-        tabKey,
-        tabLabel,
-        tabProps: { kafkaId: kafka.id, tabKey },
-    });
+    const compRef = await getKafkaOpTabCompInst(kafka);
     compRef?.initKafka?.(kafka);
 });
 
@@ -43,10 +46,7 @@ const NodeTypeKafkaTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
     const kafkaInfos = res.list;
     await sleep(100);
     return kafkaInfos.map((x: any) => {
-        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeKafka)
-            .withIsLeaf(true)
-            .withParams(x)
-            .withNodeComponent(NodeKafka);
+        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeKafka).withIsLeaf(true).withParams(x).withNodeComponent(NodeKafka);
     });
 });
 

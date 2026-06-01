@@ -105,20 +105,24 @@ const state = reactive({
 
 const { dialogVisible, stats, netInter } = toRefs(state);
 
-watch(props, async (newValue: any) => {
-    const visible = newValue.visible;
-    if (visible) {
-        await setStats();
-    }
-    state.dialogVisible = visible;
-    if (visible) {
-        initCharts();
-    }
-});
-
 const setStats = async () => {
     state.stats = await machineApi.stats.request({ id: props.machineId });
 };
+
+watch(
+    props,
+    async (newValue: any) => {
+        const visible = newValue.visible;
+        if (visible) {
+            await setStats();
+        }
+        state.dialogVisible = visible;
+        if (visible) {
+            initCharts();
+        }
+    },
+    { immediate: true }
+);
 
 const onRefresh = async () => {
     await setStats();

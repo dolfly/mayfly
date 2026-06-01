@@ -24,7 +24,7 @@ export const machineApi = {
     del: Api.newDelete('/machines/{id}'),
     scripts: Api.newGet('/machines/{machineId}/scripts'),
     scriptCategorys: Api.newGet('/machines/scripts/categorys'),
-    runScript: Api.newGet('/machines/scripts/{scriptId}/{ac}/run'),
+    runScript: Api.newGet('/machines/scripts/{scriptId}/{acName}/run'),
     saveScript: Api.newPost('/machines/{machineId}/scripts'),
     deleteScript: Api.newDelete('/machines/{machineId}/scripts/{scriptId}'),
     // 获取配置文件列表

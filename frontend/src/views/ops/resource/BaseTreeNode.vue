@@ -51,13 +51,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, inject } from 'vue';
 import SvgIcon from '@/components/svgIcon/index.vue';
+import { computed, inject, ref } from 'vue';
 
-import { ContextmenuItem } from '@/components/contextmenu';
-import { ResourceOpCtx, TagTreeNode } from '@/views/ops/component/tag';
-import { ResourceOpCtxKey, IsShowActionsKey } from '@/views/ops/resource/resource';
 import { hasPerm } from '@/components/auth/auth';
+import { ContextmenuItem } from '@/components/contextmenu';
+import { TagTreeNode } from '@/views/ops/component/tag';
+import { IsShowActionsKey } from '@/views/ops/resource/resource';
+import { ResourceOpCtx, ResourceOpCtxKey } from '@/views/ops/resource/resourceOp';
 
 const resourceOpCtx: ResourceOpCtx | undefined = inject(ResourceOpCtxKey, undefined);
 

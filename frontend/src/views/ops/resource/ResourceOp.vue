@@ -9,26 +9,6 @@
                                 <SvgIcon class="tag-tree-search-icon" name="search" />
                             </template>
                         </el-input>
-
-                        <div class="ml-1" v-if="singletonCount > 1">
-                            <el-dropdown placement="bottom-start" @command="changeResourceOp">
-                                <el-button type="primary" link plain><SvgIcon name="Switch" /> </el-button>
-
-                                <template #dropdown>
-                                    <el-dropdown-menu>
-                                        <el-dropdown-item
-                                            :command="{ name }"
-                                            v-for="(compConf, name) in singletonComponents"
-                                            :key="name"
-                                            :disabled="name == activeResourceCompName"
-                                        >
-                                            <SvgIcon v-if="compConf.icon" :name="compConf.icon.name" :color="compConf.icon.color" />
-                                            <div class="ml-1">{{ compConf.tabLabel || $t(compConf.name) }}</div>
-                                        </el-dropdown-item>
-                                    </el-dropdown-menu>
-                                </template>
-                            </el-dropdown>
-                        </div>
                     </div>
 
                     <el-scrollbar>
@@ -65,27 +45,72 @@
             </el-splitter-panel>
 
             <el-splitter-panel>
-                <el-card class="h-full" body-class="h-full !p-1 flex flex-col flex-1">
+                <el-card class="h-full" body-class="h-full !p-0 flex flex-col flex-1">
                     <!-- 标签栏：当存在带 tabKey 的组件时显示 -->
-                    <div v-if="resourceTabs.length > 0" class="resource-tabs">
+                    <div
+                        v-if="resourceTabs.length > 0"
+                        class="flex items-center gap-1 px-1.5 py-1 border-b border-(--el-border-color-light) shrink-0 overflow-x-auto min-h-9 [&::-webkit-scrollbar]:h-0.75"
+                    >
                         <div
                             v-for="tab in resourceTabs"
-                            :key="tab.tabKey"
-                            class="resource-tab-item"
-                            :class="{ 'is-active': activeResourceCompName === tab.tabKey }"
-                            @click="activateTab(tab.tabKey)"
+                            :key="tab.key"
+                            class="group flex items-center gap-1 px-2.5 py-1 rounded cursor-pointer text-xs whitespace-nowrap shrink-0 transition-all duration-200 ease-in-out"
+                            :class="[
+                                activeResourceOpTabKey === tab.key
+                                    ? 'text-(--el-color-primary) bg-(--el-color-primary-light-9) border border-(--el-color-primary-light-5)'
+                                    : 'text-(--el-text-color-regular) bg-(--el-fill-color-blank) border border-(--el-border-color-lighter) hover:bg-(--el-fill-color) hover:text-(--el-text-color-primary) hover:border-(--el-border-color)',
+                            ]"
+                            @click="activateTab(tab.key)"
                             @contextmenu.prevent="onTabContextmenu($event, tab)"
                         >
-                            <SvgIcon v-if="tab.icon" :name="tab.icon.name" :color="tab.icon.color" class="resource-tab-icon" />
-                            <span class="resource-tab-label" :title="tab.tabLabel || $t(tab.name)">{{ tab.tabLabel || $t(tab.name) }}</span>
-                            <span class="resource-tab-actions">
-                                <SvgIcon name="RefreshRight" class="resource-tab-action" @click.stop="refreshTab(tab.tabKey)" />
-                                <span class="resource-tab-action" @click.stop="closeTab(tab.tabKey)">
-                                    <SvgIcon name="Close" class="text-[12px]!" />
+                            <!-- 自定义 tab 组件 -->
+                            <component v-if="tab.tabComponent" :is="tab.tabComponent" v-bind="{ ...tab.tabComponentProps, tabName: $t(tab.name) }" />
+                            <!-- 默认 tab 显示：icon + name -->
+                            <template v-else>
+                                <SvgIcon
+                                    v-if="tab.tabComponentProps?.icon"
+                                    :name="tab.tabComponentProps.icon.name"
+                                    :color="tab.tabComponentProps.icon.color"
+                                    class="text-xs shrink-0"
+                                />
+                                <span class="max-w-35 overflow-hidden text-ellipsis" :title="$t(tab.name)">{{ $t(tab.name) }}</span>
+                            </template>
+                            <!-- 激活的tab：始终显示所有按钮 -->
+                            <span v-if="activeResourceOpTabKey === tab.key" class="inline-flex items-center gap-0.5 ml-1 shrink-0">
+                                <span
+                                    class="w-4 h-4 flex items-center justify-center rounded shrink-0 cursor-pointer transition-all duration-200 ease-in-out hover:bg-(--el-color-info-light-7)"
+                                    @click.stop="refreshTab(tab.key)"
+                                >
+                                    <SvgIcon name="RefreshRight" class="text-(--el-text-color-secondary) hover:text-(--el-text-color-primary)" />
                                 </span>
-                                <span class="resource-tab-fullscreen" @click.stop="toggleFullscreen">
-                                    <SvgIcon v-if="!isFullscreen" name="FullScreen" class="resource-tab-action" />
-                                    <SvgIcon v-else name="crop" class="resource-tab-action" />
+                                <span
+                                    class="w-4 h-4 flex items-center justify-center rounded shrink-0 cursor-pointer transition-all duration-200 ease-in-out hover:bg-(--el-color-info-light-7)"
+                                    @click.stop="closeTab(tab.key)"
+                                >
+                                    <SvgIcon name="Close" class="text-(--el-text-color-secondary) hover:text-(--el-text-color-primary) text-[12px]!" />
+                                </span>
+                                <span
+                                    class="w-4 h-4 flex items-center justify-center rounded shrink-0 cursor-pointer transition-all duration-200 ease-in-out hover:bg-(--el-color-info-light-7)"
+                                    @click.stop="toggleFullscreen"
+                                >
+                                    <SvgIcon
+                                        v-if="!isFullscreen"
+                                        name="FullScreen"
+                                        class="text-(--el-text-color-secondary) hover:text-(--el-text-color-primary)"
+                                    />
+                                    <SvgIcon v-else name="crop" class="text-(--el-text-color-secondary) hover:text-(--el-text-color-primary)" />
+                                </span>
+                            </span>
+                            <!-- 非激活的tab：悬浮时只显示关闭按钮 -->
+                            <span
+                                v-else
+                                class="inline-flex items-center gap-0.5 h-4.5 max-w-0 overflow-hidden opacity-0 shrink-0 transition-all duration-300 ease-in-out group-hover:max-w-5 group-hover:ml-1 group-hover:opacity-100"
+                            >
+                                <span
+                                    class="w-4 h-4 flex items-center justify-center rounded shrink-0 cursor-pointer transition-all duration-200 ease-in-out hover:bg-(--el-color-info-light-7)"
+                                    @click.stop="closeTab(tab.key)"
+                                >
+                                    <SvgIcon name="Close" class="text-(--el-text-color-secondary) hover:text-(--el-text-color-primary) text-[12px]!" />
                                 </span>
                             </span>
                         </div>
@@ -93,10 +118,10 @@
                     <div class="resource-tab-content">
                         <keep-alive>
                             <component
-                                :is="resourceComponents[activeResourceCompName]?.component"
-                                :key="componentKey"
-                                v-bind="resourceComponents[activeResourceCompName]?.tabProps"
-                                @init="initResourceComp"
+                                ref="activeCompRef"
+                                :is="activeResourceTab?.component"
+                                :key="activeResourceTab?.componentKey"
+                                v-bind="activeResourceTab?.componentProps"
                             />
                         </keep-alive>
                     </div>
@@ -106,24 +131,39 @@
 
         <Contextmenu :dropdown="state.dropdown" :items="state.contextmenuItems" ref="contextmenuRef" />
         <Contextmenu :dropdown="tabDropdown" :items="tabContextmenuItems" ref="tabContextmenuRef" />
+
+        <!-- 渲染注册的非 tab 组件（Overlay） -->
+        <template v-for="overlay in Array.from(allResourceOpOverlays.values())" :key="overlay.key">
+            <component v-if="overlay.visible" :is="overlay.component" v-bind="overlay.props" @update:visible="(val: boolean) => (overlay.visible = val)" />
+        </template>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, markRaw, nextTick, onMounted, onUnmounted, provide, reactive, ref, toRefs, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, provide, reactive, ref, toRefs, useTemplateRef, watch } from 'vue';
 
-import { Contextmenu, ContextmenuItem } from '@/components/contextmenu';
-import { isPrefixSubsequence } from '@/common/utils/string';
-import SvgIcon from '@/components/svgIcon/index.vue';
 import { TagResourceTypeEnum } from '@/common/commonEnum';
-import EnumValue from '@/common/Enum';
-import { getResourceNodeType, getResourceTypes, ResourceOpCtxKey, loadResourceTags } from './resource';
-import BaseTreeNode from './BaseTreeNode.vue';
-import { tagApi } from '@/views/ops/tag/api';
-import { TagTreeNode, ResourceComponentConfig, ResourceOpCtx } from '@/views/ops/component/tag';
-import { useI18n } from 'vue-i18n';
+import { isPrefixSubsequence } from '@/common/utils/string';
+import { Contextmenu, ContextmenuItem } from '@/components/contextmenu';
+import SvgIcon from '@/components/svgIcon/index.vue';
 import { useAutoOpenResource } from '@/store/autoOpenResource';
+import { ResourceOpCtx } from '@/views/ops/component/tag';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
+import BaseTreeNode from './BaseTreeNode.vue';
+import { getResourceTypes, loadResourceTags } from './resource';
+import {
+    activateResourceOpTab,
+    activeResourceOpTabKey,
+    allResourceOpOverlays,
+    allResourceOpTabs,
+    getComponentInstance,
+    getResourceOpTab,
+    registerComponentInstance,
+    removeResourceOpTab,
+    ResourceOpCtxKey,
+    ResourceOpTab,
+} from './resourceOp';
 
 const props = defineProps({
     load: {
@@ -153,25 +193,17 @@ const treeRef: any = useTemplateRef('treeRef');
 const contextmenuRef: any = useTemplateRef('contextmenuRef');
 const tabContextmenuRef: any = useTemplateRef('tabContextmenuRef');
 
-// 存储所有注册的资源组件引用，key -> 组件名称
-const resourceComponents = ref<Record<string, ResourceComponentConfig>>({});
-
 // 存储当前组件对应的最后操作的节点key，用户切换资源操作组件时，定位到相应的树节点
 const resourceComponentsNodeKey = ref<Record<string, string>>({});
 
-// 当前激活（正在操作）的资源组件
-const activeResourceCompName = ref<string>('');
+// 当前激活的 tab（从 allResourceOpTabs 获取）
+const activeResourceTab = computed(() => {
+    return getResourceOpTab(activeResourceOpTabKey.value);
+});
 
-// 带 tabKey 的标签页列表
-const resourceTabs = ref<ResourceComponentConfig[]>([]);
-
-const resourceComponentRefs = ref<Record<string, any>>({});
-
-// tab key 版本号，关闭时递增以强制清除 keep-alive 缓存
-const tabKeyVersions = ref<Record<string, number>>({});
-const componentKey = computed(() => {
-    const name = activeResourceCompName.value;
-    return name ? `${name}-${tabKeyVersions.value[name] || 0}` : '';
+const resourceTabs = computed(() => {
+    // 过滤掉 hideTab 为 true 的 tab（纯弹窗组件不显示 tab 标签）
+    return Array.from(allResourceOpTabs.values());
 });
 
 // Tab 右键菜单
@@ -213,16 +245,32 @@ onUnmounted(() => {
     document.removeEventListener('keydown', onFullscreenKeydown);
 });
 
-// :ref="(el: any) => setResourceComponentRefs(activeResourceComp, el)"
-const setResourceComponentRefs = async (name: string, ref: any) => {
-    if (!name || !ref) {
-        return;
-    }
-    if (resourceComponentRefs.value[name]) {
-        return;
-    }
-    resourceComponentRefs.value[name] = ref;
+const activeCompRef = useTemplateRef<any>('activeCompRef');
+
+// 注册当前活跃组件实例到对应 tab
+const registerActiveComp = (tabKey: string) => {
+    const el = activeCompRef.value;
+    if (!tabKey || !el) return false;
+
+    registerComponentInstance(tabKey, el);
+    return true;
 };
+
+// 监听 tab 切换，主动获取当前活跃组件实例并注册
+// 解决 keep-alive 场景下 :ref 回调不可靠的问题（缓存组件激活时 ref 回调不重新触发）
+watch(activeResourceOpTabKey, (tabKey: string) => {
+    if (!tabKey) return;
+    // 异步组件可能需要多轮 nextTick 才能拿到实例
+    const tryRegister = () => {
+        nextTick(() => {
+            if (!registerActiveComp(tabKey)) {
+                // 实例尚未就绪，继续轮询
+                setTimeout(tryRegister, 10);
+            }
+        });
+    };
+    tryRegister();
+});
 
 const state = reactive({
     defaultExpandedKeys: [] as string[],
@@ -330,10 +378,10 @@ const treeNodeClick = async (data: any, node: any) => {
     }
 
     setTimeout(() => {
-        if (activeResourceCompName.value) {
-            resourceComponentsNodeKey.value[activeResourceCompName.value] = data.key;
+        if (activeResourceOpTabKey.value) {
+            resourceComponentsNodeKey.value[activeResourceOpTabKey.value] = data.key;
         }
-    }, 500);
+    }, 50);
 };
 
 // 树节点双击事件
@@ -372,207 +420,96 @@ const onNodeContextmenu = (event: any, data: any) => {
     contextmenuRef.value.openContextmenu(data);
 };
 
-// 初始化资源组件ref
-const initResourceComp = (val: any) => {
-    // tabbed 组件使用 tabKey 作为 ref 键，单例组件使用 name
-    const key = val.tabKey || val.name;
-    if (!val.ref || resourceComponentRefs.value[key]) {
-        return;
-    }
-    resourceComponentRefs.value[key] = val.ref;
-};
-
-// 单例组件（不含 tabKey 的组件），用于下拉切换
-const singletonComponents = computed(() => {
-    const result: Record<string, ResourceComponentConfig> = {};
-    for (const [key, val] of Object.entries(resourceComponents.value)) {
-        if (!val.tabKey) {
-            result[key] = val;
-        }
-    }
-    return result;
-});
-
-const singletonCount = computed(() => Object.keys(singletonComponents.value).length);
-
-const addResourceComponent = async (componentConf: ResourceComponentConfig) => {
-    const tabKey = componentConf.tabKey;
-    // 带 tabKey 时使用 tabKey 作为字典键，否则回退到 name（单例模式）
-    const compKey = tabKey || componentConf.name;
-
-    if (!resourceComponents.value[compKey]) {
-        // 将 tabKey 注入到 tabProps，确保子组件能通过 props 接收到
-        if (tabKey) {
-            componentConf.tabProps = { ...componentConf.tabProps, tabKey };
-        }
-        resourceComponents.value[compKey] = componentConf;
-    }
-
-    // 如果是带 tabKey 的组件，管理标签页列表
-    if (tabKey) {
-        const existingTabIndex = resourceTabs.value.findIndex((t) => t.tabKey === tabKey);
-        if (existingTabIndex === -1) {
-            resourceTabs.value.push({ ...componentConf, component: undefined });
-        }
-    }
-
-    activeResourceCompName.value = compKey;
-
-    // 组件切换后，通知新激活的组件（用于同步全局状态等）
-    nextTick(() => {
-        const activeRef = resourceComponentRefs.value[compKey];
-        activeRef?.onActivate?.();
-    });
-
-    // 使用一个 Promise 来确保组件引用已经被设置
-    return new Promise((resolve) => {
-        const checkRef = () => {
-            if (resourceComponentRefs.value[compKey]) {
-                resolve(resourceComponentRefs.value[compKey]);
-            } else {
-                // 如果引用还没有设置，稍后再检查
-                setTimeout(checkRef, 10);
-            }
-        };
-        // 先等待 nextTick 确保 DOM 更新
-        nextTick().then(() => {
-            checkRef();
-        });
-    });
-};
-
-const changeResourceOp = (data: any) => {
-    const compName = data.name;
-    activeResourceCompName.value = compName;
-    if (resourceComponentsNodeKey.value[compName]) {
-        setCurrentKey(resourceComponentsNodeKey.value[compName]);
-    }
-};
-
 // 激活指定标签页
 const activateTab = (tabKey: string) => {
-    activeResourceCompName.value = tabKey;
+    activateResourceOpTab(tabKey);
     // 定位到左侧资源树对应节点
     if (resourceComponentsNodeKey.value[tabKey]) {
         setCurrentKey(resourceComponentsNodeKey.value[tabKey]);
     }
     nextTick(() => {
-        const activeRef = resourceComponentRefs.value[tabKey];
-        activeRef?.onActivate?.();
+        // 调用该tab的激活回调
+        getComponentInstance<any>(tabKey)?.onActivate?.();
     });
 };
 
 // 关闭标签页
 const closeTab = (tabKey: string) => {
-    const tabIndex = resourceTabs.value.findIndex((t) => t.tabKey === tabKey);
-    if (tabIndex === -1) return;
-
-    // 移除标签
-    resourceTabs.value.splice(tabIndex, 1);
-    delete resourceComponents.value[tabKey];
-    delete resourceComponentRefs.value[tabKey];
-    tabKeyVersions.value[tabKey] = (tabKeyVersions.value[tabKey] || 0) + 1;
+    // 清除组件实例和缓存
+    removeResourceOpTab(tabKey);
 
     // 如果关闭的是当前活动标签，切换到相邻标签
-    if (activeResourceCompName.value === tabKey) {
-        if (resourceTabs.value.length > 0) {
-            const nextTab = resourceTabs.value[Math.min(tabIndex, resourceTabs.value.length - 1)];
-            activateTab(nextTab.tabKey!);
-        } else {
-            // 没有标签了，清空活动组件
-            activeResourceCompName.value = '';
+    if (activeResourceOpTabKey.value === tabKey) {
+        const remainingTabs: string[] = Array.from(allResourceOpTabs.keys());
+        if (remainingTabs.length > 0) {
+            // 切换到最后一个tab
+            activateTab(remainingTabs[remainingTabs.length - 1]);
         }
     }
 };
 
 // 刷新标签页（通过改变 key 强制重新渲染）
 const refreshTab = (tabKey: string) => {
-    const compRef = resourceComponentRefs.value[tabKey];
-    if (compRef?.onRefresh) {
-        compRef.onRefresh();
-        return;
-    }
-    // // 回退方案：移除组件引用并重新创建
-    // delete resourceComponentRefs.value[tabKey];
-    // if (resourceComponents.value[tabKey]) {
-    //     const originalComponent = resourceComponents.value[tabKey].component;
-    //     // 临时设为 null 触发组件销毁，然后恢复
-    //     resourceComponents.value[tabKey] = { ...resourceComponents.value[tabKey], component: null as any };
-    //     nextTick(() => {
-    //         if (resourceComponents.value[tabKey]) {
-    //             resourceComponents.value[tabKey] = {
-    //                 ...resourceComponents.value[tabKey],
-    //                 component: markRaw(originalComponent),
-    //             };
-    //         }
-    //     });
-    // }
+    // 调用该 tab 注册的刷新回调
+    getComponentInstance<any>(tabKey)?.onRefresh?.();
 };
 
 // Tab 右键菜单处理
-const onTabContextmenu = (event: MouseEvent, tab: ResourceComponentConfig) => {
+const onTabContextmenu = (event: MouseEvent, tab: ResourceOpTab) => {
     // 关闭可能存在的树节点右键菜单
     contextmenuRef.value?.closeContextmenu();
     tabDropdown.x = event.clientX;
     tabDropdown.y = event.clientY;
-    tabContextmenuRef.value?.openContextmenu({ tabKey: tab.tabKey });
+    tabContextmenuRef.value?.openContextmenu({ tabKey: tab.key });
 };
 
 // 关闭所有标签
 const closeAllTabs = () => {
-    const allKeys = resourceTabs.value.map((t) => t.tabKey!);
+    const allKeys: string[] = Array.from(allResourceOpTabs.keys());
     allKeys.forEach((key) => {
-        delete resourceComponents.value[key];
-        delete resourceComponentRefs.value[key];
-        tabKeyVersions.value[key] = (tabKeyVersions.value[key] || 0) + 1;
+        removeResourceOpTab(key);
     });
-    resourceTabs.value = [];
-    activeResourceCompName.value = '';
+    allResourceOpTabs.clear();
+    activateResourceOpTab('');
 };
 
 // 关闭左侧标签
 const closeLeftTabs = (targetTabKey: string) => {
-    const targetIndex = resourceTabs.value.findIndex((t) => t.tabKey === targetTabKey);
+    const allKeys: string[] = Array.from(allResourceOpTabs.keys());
+    const targetIndex = allKeys.indexOf(targetTabKey);
     if (targetIndex <= 0) return;
-    const tabsToClose = resourceTabs.value.slice(0, targetIndex);
-    tabsToClose.forEach((tab) => {
-        delete resourceComponents.value[tab.tabKey!];
-        delete resourceComponentRefs.value[tab.tabKey!];
-        tabKeyVersions.value[tab.tabKey!] = (tabKeyVersions.value[tab.tabKey!] || 0) + 1;
+    const keysToClose = allKeys.slice(0, targetIndex);
+    keysToClose.forEach((key: string) => {
+        removeResourceOpTab(key);
     });
-    resourceTabs.value = resourceTabs.value.slice(targetIndex);
     // 如果当前激活的标签被关闭，切换到目标标签
-    if (tabsToClose.some((t) => t.tabKey === activeResourceCompName.value)) {
-        activateTab(targetTabKey);
+    if (keysToClose.includes(activeResourceOpTabKey.value)) {
+        activateResourceOpTab(targetTabKey);
     }
 };
 
 // 关闭其他标签
 const closeOtherTabs = (targetTabKey: string) => {
-    const tabsToClose = resourceTabs.value.filter((t) => t.tabKey !== targetTabKey);
-    tabsToClose.forEach((tab) => {
-        delete resourceComponents.value[tab.tabKey!];
-        delete resourceComponentRefs.value[tab.tabKey!];
-        tabKeyVersions.value[tab.tabKey!] = (tabKeyVersions.value[tab.tabKey!] || 0) + 1;
+    const allKeys: string[] = Array.from(allResourceOpTabs.keys());
+    const keysToClose = allKeys.filter((key) => key !== targetTabKey);
+    keysToClose.forEach((key: string) => {
+        removeResourceOpTab(key);
     });
-    resourceTabs.value = resourceTabs.value.filter((t) => t.tabKey === targetTabKey);
-    activateTab(targetTabKey);
+    activateResourceOpTab(targetTabKey);
 };
 
 // 关闭右侧标签
 const closeRightTabs = (targetTabKey: string) => {
-    const targetIndex = resourceTabs.value.findIndex((t) => t.tabKey === targetTabKey);
-    if (targetIndex === -1 || targetIndex === resourceTabs.value.length - 1) return;
-    const tabsToClose = resourceTabs.value.slice(targetIndex + 1);
-    tabsToClose.forEach((tab) => {
-        delete resourceComponents.value[tab.tabKey!];
-        delete resourceComponentRefs.value[tab.tabKey!];
-        tabKeyVersions.value[tab.tabKey!] = (tabKeyVersions.value[tab.tabKey!] || 0) + 1;
+    const allKeys: string[] = Array.from(allResourceOpTabs.keys());
+    const targetIndex = allKeys.indexOf(targetTabKey);
+    if (targetIndex === -1 || targetIndex === allKeys.length - 1) return;
+    const keysToClose = allKeys.slice(targetIndex + 1);
+    keysToClose.forEach((key: string) => {
+        removeResourceOpTab(key);
     });
-    resourceTabs.value = resourceTabs.value.slice(0, targetIndex + 1);
     // 如果当前激活的标签被关闭，切换到目标标签
-    if (tabsToClose.some((t) => t.tabKey === activeResourceCompName.value)) {
-        activateTab(targetTabKey);
+    if (keysToClose.includes(activeResourceOpTabKey.value)) {
+        activateResourceOpTab(targetTabKey);
     }
 };
 
@@ -606,13 +543,12 @@ const setCurrentKey = (nodeKey: any) => {
 };
 
 const onResizeOpPanel = () => {
-    for (let name in resourceComponentRefs.value) {
-        resourceComponentRefs.value[name]?.onResize?.();
+    for (const [tabKey] of allResourceOpTabs) {
+        getComponentInstance<any>(tabKey)?.onResize?.();
     }
 };
 
 const ctx: ResourceOpCtx = {
-    addResourceComponent,
     setCurrentTreeKey: setCurrentKey,
     getTreeNode: getNode,
     reloadTreeNode: reloadNode,
@@ -638,103 +574,7 @@ provide(ResourceOpCtxKey, ctx);
     flex: 1;
     min-height: 0;
     overflow: hidden;
-}
-
-.resource-tabs {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 4px;
-    border-bottom: 1px solid var(--el-border-color-light);
-    flex-shrink: 0;
-    overflow-x: auto;
-    min-height: 32px;
-
-    &::-webkit-scrollbar {
-        height: 3px;
-    }
-}
-
-.resource-tab-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    white-space: nowrap;
-    color: var(--el-text-color-regular);
-    background-color: var(--el-fill-color-blank);
-    border: 1px solid var(--el-border-color-lighter);
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-
-    &:hover {
-        background-color: var(--el-fill-color);
-        color: var(--el-text-color-primary);
-    }
-
-    &.is-active {
-        color: var(--el-color-primary);
-        background-color: var(--el-color-primary-light-9);
-        border-color: var(--el-color-primary-light-5);
-    }
-}
-
-.resource-tab-icon {
-    font-size: 12px;
-    flex-shrink: 0;
-}
-
-.resource-tab-label {
-    max-width: 140px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.resource-tab-actions {
-    display: none;
-    align-items: center;
-    gap: 2px;
-    flex-shrink: 0;
-    margin-left: 2px;
-
-    .resource-tab-item.is-active &,
-    .resource-tab-item:hover & {
-        display: flex;
-    }
-}
-
-.resource-tab-action {
-    font-size: 12px;
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 3px;
-    flex-shrink: 0;
-    color: var(--el-text-color-secondary);
-    transition: all 0.2s ease;
-
-    &:hover {
-        background-color: var(--el-color-info-light-7);
-        color: var(--el-text-color-primary);
-    }
-}
-
-.resource-tab-item.is-active .resource-tab-action:hover {
-    background-color: var(--el-color-primary);
-    color: var(--el-color-white);
-}
-
-.resource-tab-fullscreen {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    cursor: pointer;
+    padding: 4px;
 }
 </style>
 

@@ -1,8 +1,8 @@
-import { defineStore } from 'pinia';
-import { formatDate } from '@/common/utils/format';
-import { useUserInfo } from '@/store/userInfo';
 import { getServerConf, getSysStyleConfig } from '@/common/sysconfig';
+import { formatDate } from '@/common/utils/format';
 import { getLocal, getThemeConfig } from '@/common/utils/storage';
+import { useUserInfo } from '@/store/userInfo';
+import { defineStore } from 'pinia';
 
 // 系统默认logo图标，对应于@/assets/image/logo.svg
 const logoIcon =
@@ -73,7 +73,7 @@ export const useThemeConfig = defineStore('themeConfig', {
             // 是否开启 Breadcrumb
             isBreadcrumb: true,
             // 是否开启 Tagsview
-            isTagsview: false,
+            isTagsview: true,
             isShareTagsView: false,
             // 是否开启 Breadcrumb 图标
             isBreadcrumbIcon: true,

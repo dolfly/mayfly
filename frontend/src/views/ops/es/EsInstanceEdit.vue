@@ -1,6 +1,14 @@
 <template>
     <div>
-        <el-drawer :append-to-body="false" :title="title" v-model="dialogVisible" :before-close="onCancel" :destroy-on-close="true" :close-on-click-modal="false" size="40%">
+        <el-drawer
+            :append-to-body="false"
+            :title="title"
+            v-model="dialogVisible"
+            :before-close="onCancel"
+            :destroy-on-close="true"
+            :close-on-click-modal="false"
+            size="40%"
+        >
             <template #header>
                 <DrawerHeader :header="title" :back="onCancel" />
             </template>
@@ -160,7 +168,7 @@ const onTestConn = async (authCert: any) => {
         submitForm.authCerts = [authCert];
     }
     await testConnExec(submitForm);
-    state.form.version = testConnRes.value.version.number;
+    state.form.version = testConnRes.value.version?.number;
     Msg.success('es.connSuccess');
 };
 

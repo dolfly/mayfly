@@ -31,8 +31,7 @@
 
 <script lang="ts" setup>
 import { Msg } from '@/hooks/useI18n';
-import { KafkaOpComp } from '@/views/ops/mq/kafka/resource';
-import { computed, defineAsyncComponent, getCurrentInstance, onMounted, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import { mqApi } from '../../api';
 
 const NodeManage = defineAsyncComponent(() => import('../component/NodeManage.vue'));
@@ -119,9 +118,7 @@ const handleConsumeMessage = (topic: string) => {
     activeTab.value = 'consume';
 };
 
-onMounted(() => {
-    emits('init', { name: KafkaOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
-});
+onMounted(() => {});
 
 defineExpose({
     initKafka,

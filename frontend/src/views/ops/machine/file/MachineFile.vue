@@ -153,24 +153,26 @@
                         </template>
 
                         <template #default="scope">
-                            <span v-if="scope.row.isFolder">
-                                <SvgIcon :size="15" name="folder" color="#007AFF" />
-                            </span>
-                            <span v-else>
-                                <SvgIcon :size="15" :name="scope.row.icon" />
-                            </span>
+                            <div class="w-full cursor-pointer" @click="getFile(scope.row)">
+                                <span v-if="scope.row.isFolder">
+                                    <SvgIcon :size="15" name="folder" color="#007AFF" />
+                                </span>
+                                <span v-else>
+                                    <SvgIcon :size="15" :name="scope.row.icon" />
+                                </span>
 
-                            <span class="!ml-1 inline-block w-[90%]">
-                                <div v-if="scope.row.nameEdit">
-                                    <el-input
-                                        @keyup.enter="fileRename(scope.row)"
-                                        :ref="(el: any) => el?.focus()"
-                                        @blur="filenameBlur(scope.row)"
-                                        v-model="scope.row.name"
-                                    />
-                                </div>
-                                <el-link v-else @click="getFile(scope.row)" style="font-weight: bold" underline="never">{{ scope.row.name }}</el-link>
-                            </span>
+                                <span class="!ml-1 inline-block w-[90%]">
+                                    <div v-if="scope.row.nameEdit">
+                                        <el-input
+                                            @keyup.enter="fileRename(scope.row)"
+                                            :ref="(el: any) => el?.focus()"
+                                            @blur="filenameBlur(scope.row)"
+                                            v-model="scope.row.name"
+                                        />
+                                    </div>
+                                    <el-link v-else style="font-weight: bold" underline="never">{{ scope.row.name }}</el-link>
+                                </span>
+                            </div>
                         </template>
                     </el-table-column>
 
@@ -221,7 +223,6 @@
                                     :title="`${scope.row.path} - ${$t('machine.fileDetail')}`"
                                     :width="520"
                                     trigger="click"
-                                    :teleported="false"
                                     @show="showFileStat(scope.row)"
                                 >
                                     <template #reference>
@@ -309,7 +310,7 @@
 <script lang="ts" setup>
 import { Msg } from '@/hooks/useI18n';
 import { ElInput } from 'element-plus';
-import {computed, defineAsyncComponent, getCurrentInstance, onMounted, reactive, ref, toRefs} from 'vue';
+import { computed, defineAsyncComponent, getCurrentInstance, onMounted, reactive, ref, toRefs } from 'vue';
 import { machineApi, uploadFile, uploadFolder } from '../api';
 
 import { isTrue, notBlank } from '@/common/assert';
@@ -383,12 +384,10 @@ const { basePath, nowPath, loading, fileNameFilter, fileContent, createFileDialo
 
 const emits = defineEmits(['init']);
 
-    // Init as MachineOp component
+// Init as MachineOp component
 onMounted(async () => {
-    
     emits('init', { name: 'tag.machineOp', tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
-    
-    
+
     state.basePath = props.path;
     const machineId = props.machineId;
 

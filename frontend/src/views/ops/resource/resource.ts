@@ -1,11 +1,30 @@
 import { TagResourceTypeEnum } from '@/common/commonEnum';
 import EnumValue from '@/common/Enum';
-import { NodeType, ResourceConfig, TagTreeNode } from '@/views/ops/component/tag';
-import { ResourceOpCtx } from '../component/tag';
-import { tagApi } from '@/views/ops/tag/api';
 import { i18n } from '@/i18n';
+import { NodeType, TagTreeNode } from '@/views/ops/component/tag';
+import type { ResourceOpCtx } from '@/views/ops/resource/resourceOp';
+import { tagApi } from '@/views/ops/tag/api';
 
-export const ResourceOpCtxKey = 'ResourceOpCtx';
+// 资源配置
+export interface ResourceConfig {
+    order?: number;
+    resourceType: number; // 资源类型
+    rootNodeType: NodeType; // 资源根节点类型
+
+    // 资源管理组件配置
+    manager?: {
+        componentConf: {
+            name: string; // 名称
+            component?: any; // 组件
+            icon?: {
+                name: string;
+                color?: string;
+            };
+        }; // 组件
+        countKey?: string; // 统计数key，tab展示的数字对象key
+        permCode?: string; // 权限码
+    };
+}
 
 // 注入 isShowActions 的 Symbol key
 export const IsShowActionsKey = Symbol('isShowActions');
@@ -183,8 +202,7 @@ const processTagNode = (ctx: ResourceOpCtx | null, tag: any): TagTreeNode => {
                     color: typeEnum?.extra.iconColor,
                 })
                 .withIsLeaf(false)
-                .withParams({ resourceCodes: children.map((c: any) => c.code), tagPath: tag.codePath })
-                .withContext(ctx);
+                .withParams({ resourceCodes: children.map((c: any) => c.code), tagPath: tag.codePath });
 
             childNodes.push(intermediateNode);
         }

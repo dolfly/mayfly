@@ -1,8 +1,10 @@
-import { defineAsyncComponent } from 'vue';
-import { NodeType, TagTreeNode, ResourceComponentConfig, ResourceConfig } from '../../component/tag';
 import { ResourceTypeEnum, TagResourceTypeEnum } from '@/common/commonEnum';
-import { redisApi } from '../api';
 import { sleep } from '@/common/utils/loading';
+import type { ResourceConfig } from '@/views/ops/resource/resource';
+import { defineAsyncComponent } from 'vue';
+import { NodeType, TagTreeNode } from '../../component/tag';
+import { createResourceOpTab } from '../../resource/resourceOp';
+import { redisApi } from '../api';
 
 export const RedisIcon = {
     name: ResourceTypeEnum.Redis.extra.icon,
@@ -14,12 +16,6 @@ const RedisDataOp = defineAsyncComponent(() => import('./RedisDataOp.vue'));
 
 const NodeRedis = defineAsyncComponent(() => import('./NodeRedis.vue'));
 const NodeRedisDb = defineAsyncComponent(() => import('./NodeRedisDb.vue'));
-
-export const RedisOpComp: ResourceComponentConfig = {
-    name: 'tag.redisDataOp',
-    component: RedisDataOp,
-    icon: RedisIcon,
-};
 
 // tagpath 节点类型
 const NodeTypeRedisTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
@@ -37,19 +33,7 @@ const NodeTypeRedisTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
 });
 
 // redis实例节点类型
-const NodeTypeRedis = new NodeType(2)
-    .withNodeClickFunc(async (node: TagTreeNode) => {
-        const redis = node.params;
-        const tabKey = `redis_${redis.id}`;
-        const tabLabel = redis.name;
-        const compRef = await node.ctx?.addResourceComponent({
-            ...RedisOpComp,
-            tabKey,
-            tabLabel,
-            tabProps: { tabKey },
-        });
-    })
-    .withLoadNodesFunc(async (parentNode: TagTreeNode) => {
+const NodeTypeRedis = new NodeType(2).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
     const redisInfo = parentNode.params;
 
     let dbs: TagTreeNode[] = redisInfo.db.split(',').map((x: string) => {
@@ -89,15 +73,23 @@ const NodeTypeRedis = new NodeType(2)
 // 库节点类型
 const NodeTypeDb = new NodeType(21).withNodeClickFunc(async (node: TagTreeNode) => {
     const params = node.params;
-    const tabKey = `redis_${params.id}`;
-    const tabLabel = params.redisName;
-    const compRef = await node.ctx?.addResourceComponent({
-        ...RedisOpComp,
-        tabKey,
-        tabLabel,
-        tabProps: { tabKey },
+
+    const key = `redis_${params.id}`;
+    const resourceOpTab = await createResourceOpTab({
+        key,
+        name: `${params.redisName}`,
+
+        component: RedisDataOp,
+        componentProps: {
+            tabKey: key,
+            redisInfo: params,
+        },
+
+        tabComponentProps: {
+            icon: RedisIcon,
+        },
     });
-    compRef?.onDbClick?.(params);
+    resourceOpTab.componentInstance?.onDbClick?.(params);
 });
 
 export default {

@@ -12,8 +12,7 @@
     </div>
 </template>
 <script lang="ts" setup>
-import { ContainerOpComp } from '@/views/ops/docker/resource';
-import { toRefs, reactive, onMounted, defineAsyncComponent, ref, getCurrentInstance } from 'vue';
+import { defineAsyncComponent, onMounted, reactive, ref, toRefs } from 'vue';
 
 const ContainerList = defineAsyncComponent(() => import('../container/ContainerList.vue'));
 const ImageList = defineAsyncComponent(() => import('../image/ImageList.vue'));
@@ -38,7 +37,6 @@ const state = reactive({
 const { activeName } = toRefs(state);
 
 onMounted(async () => {
-    emits('init', { name: ContainerOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
     state.activeName = containerTab;
 });
 

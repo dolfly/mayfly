@@ -1,18 +1,11 @@
 <template>
     <div class="es-index-data-box">
-        <el-descriptions class="!w-full flex-shrink-0" :column="20" size="small" border>
+        <el-descriptions class="w-full! shrink-0" :column="20" size="small" border>
             <el-descriptions-item label-align="center">
                 <template #label>
                     <SvgIcon name="Menu" />
                 </template>
-                <el-select
-                    v-model="currentIdxName"
-                    filterable
-                    :teleported="false"
-                    size="small"
-                    style="width: 200px"
-                    @change="onIndexChange"
-                >
+                <el-select v-model="currentIdxName" filterable :teleported="false" size="small" style="width: 200px" @change="onIndexChange">
                     <el-option v-for="idx in indices" :key="idx.index" :value="idx.index" :label="idx.index" />
                 </el-select>
             </el-descriptions-item>
@@ -36,7 +29,7 @@
             </el-descriptions-item>
         </el-descriptions>
 
-        <el-row class="es-op-header flex-shrink-0">
+        <el-row class="es-op-header shrink-0">
             <el-col :span="20">
                 <el-space>
                     <el-tooltip :show-after="tooltipTime" effect="dark" placement="top" :teleported="false" :content="t('common.refresh')">
@@ -47,10 +40,24 @@
                         <el-link @click="onBasicSearch" icon="Search" underline="never" />
                     </el-tooltip>
 
-                    <el-tooltip :show-after="tooltipTime" v-auth="perms.saveData" effect="dark" placement="top" :teleported="false" :content="t('common.create')">
+                    <el-tooltip
+                        :show-after="tooltipTime"
+                        v-auth="perms.saveData"
+                        effect="dark"
+                        placement="top"
+                        :teleported="false"
+                        :content="t('common.create')"
+                    >
                         <el-link @click="onAddDoc" icon="plus" underline="never" />
                     </el-tooltip>
-                    <el-tooltip :show-after="tooltipTime" v-auth="perms.delData" effect="dark" placement="top" :teleported="false" :content="t('common.delete')">
+                    <el-tooltip
+                        :show-after="tooltipTime"
+                        v-auth="perms.delData"
+                        effect="dark"
+                        placement="top"
+                        :teleported="false"
+                        :content="t('common.delete')"
+                    >
                         <el-link :disabled="state.selectKeys.length === 0" @click="onDeleteDocs" icon="Minus" underline="never" />
                     </el-tooltip>
                     <el-tooltip :show-after="tooltipTime" v-auth="perms.saveData" effect="dark" placement="top" :teleported="false" :content="t('common.edit')">
@@ -191,7 +198,7 @@
                                     <SvgIcon class="is-loading" name="loading" color="var(--el-color-primary)" :size="28" />
                                     <el-text class="ml-1" tag="b">{{ t('db.execTime') }} - {{ state.execTime?.toFixed(1) || 0 }}s</el-text>
                                 </div>
-                                <div v-if="state.loading && state.abortSearch" class="!mt-2">
+                                <div v-if="state.loading && state.abortSearch" class="mt-2!">
                                     <el-button @click="state.abortSearch" type="info" size="small" plain>{{ t('common.cancel') }}</el-button>
                                 </div>
                             </div>
@@ -201,13 +208,7 @@
             </el-auto-resizer>
         </div>
 
-        <es-search
-            :instId="instId"
-            :idxName="currentIdxName"
-            :fields="state.fields"
-            v-model:visible="state.searchDialogVisible"
-            @search="onEsSearch"
-        />
+        <es-search :instId="instId" :idxName="currentIdxName" :fields="state.fields" v-model:visible="state.searchDialogVisible" @search="onEsSearch" />
 
         <Contextmenu :dropdown="state.contextmenu.dropdown" :items="state.contextmenu.items" ref="contextmenuRef" />
 
@@ -220,15 +221,13 @@ import Api from '@/common/Api';
 import { copyToClipboard } from '@/common/utils/string';
 import { Contextmenu, ContextmenuItem } from '@/components/contextmenu';
 import SvgIcon from '@/components/svgIcon/index.vue';
-import { Msg, useI18nConfirm, useI18nDeleteConfirm } from '@/hooks/useI18n';
+import { Msg, useI18nDeleteConfirm } from '@/hooks/useI18n';
 import { esApi } from '@/views/ops/es/api';
 import { useIntervalFn } from '@vueuse/core';
-import { defineAsyncComponent, getCurrentInstance, onMounted, reactive, ref } from 'vue';
+import { defineAsyncComponent, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { EsIndexDataComp } from '@/views/ops/es/resource';
-
-const EsSearch = defineAsyncComponent(() => import('../component/EsSearch.vue'));
+const EsSearch = defineAsyncComponent(() => import('./EsSearch.vue'));
 
 const props = defineProps<{
     instId: any;
@@ -288,7 +287,6 @@ const tableRef = ref();
 const emits = defineEmits(['init']);
 
 onMounted(async () => {
-    emits('init', { name: EsIndexDataComp.name, tabKey: undefined, ref: getCurrentInstance()?.exposed });
     await fetchIndices();
     setTimeout(fetchIndexData, 300);
 });

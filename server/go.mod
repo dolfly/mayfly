@@ -3,19 +3,19 @@ module mayfly-go
 go 1.26
 
 require (
-	gitee.com/chunanyong/dm v1.8.21
+	gitee.com/chunanyong/dm v1.8.23
 	gitee.com/liuzongyang/libpq v1.10.11
-	github.com/cloudwego/eino v0.9.0
+	github.com/cloudwego/eino v0.9.2
 	github.com/cloudwego/eino-ext/components/model/openai v0.1.13
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.7.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/glebarez/sqlite v1.11.0
-	github.com/go-gormigrate/gormigrate/v2 v2.1.5
+	github.com/go-gormigrate/gormigrate/v2 v2.1.6
 	github.com/go-ldap/ldap/v3 v3.4.13
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
-	github.com/go-playground/validator/v10 v10.30.2
+	github.com/go-playground/validator/v10 v10.30.3
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
@@ -30,7 +30,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.25
 	github.com/pkg/sftp v1.13.10
 	github.com/pquerna/otp v1.5.0
-	github.com/redis/go-redis/v9 v9.19.0
+	github.com/redis/go-redis/v9 v9.20.0
 	github.com/robfig/cron/v3 v3.0.1 // 定时任务
 	github.com/sijms/go-ora/v2 v2.9.0
 	github.com/spf13/cast v1.10.0

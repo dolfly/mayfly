@@ -1,8 +1,10 @@
-import { defineAsyncComponent } from 'vue';
-import { NodeType, TagTreeNode, ResourceComponentConfig, ResourceConfig } from '../../component/tag';
 import { ResourceTypeEnum, TagResourceTypeEnum } from '@/common/commonEnum';
 import { sleep } from '@/common/utils/loading';
 import { milvusApi, perms } from '@/views/ops/milvus/api';
+import type { ResourceConfig } from '@/views/ops/resource/resource';
+import { createResourceOpTab } from '@/views/ops/resource/resourceOp';
+import { defineAsyncComponent } from 'vue';
+import { NodeType, TagTreeNode } from '../../component/tag';
 
 export const MilvusIcon = {
     name: ResourceTypeEnum.Milvus.extra.icon,
@@ -15,30 +17,26 @@ const MilvusOp = defineAsyncComponent(() => import('./MilvusOp.vue'));
 const NodeMilvus = defineAsyncComponent(() => import('./NodeMilvus.vue'));
 const NodeMilvusAc = defineAsyncComponent(() => import('./NodeMilvusAc.vue'));
 
-export const MilvusOpComp: ResourceComponentConfig = {
-    name: 'tag.milvusOp',
-    component: MilvusOp,
-    icon: MilvusIcon,
+const getMilvusOpTab = async (milvus: any, acName: string) => {
+    const tabKey = `milvus_${milvus.id}_${acName}`;
+    return await createResourceOpTab({
+        key: tabKey,
+        name: milvus.acUsername ? `${milvus.name} (${milvus.acUsername})` : milvus.name,
+        component: MilvusOp,
+        tabComponentProps: { icon: MilvusIcon },
+    });
+};
+
+const getMilvusOpTabCompInst = async (milvus: any, acName: string) => {
+    return (await getMilvusOpTab(milvus, acName)).componentInstance;
 };
 
 // milvus 授权凭证节点类型：点击后打开独立标签页
 const NodeTypeMilvusAc = new NodeType(TagResourceTypeEnum.Milvus.value * 10 + 1).withNodeClickFunc(async (node: TagTreeNode) => {
     const milvus = node.params;
-    const milvusId = milvus.id;
     const acName = milvus.selectAuthCert?.name || '';
-    const acUsername = milvus.selectAuthCert?.username;
-    // 标签页唯一标识：milvusId + acName，确保不重复创建
-    const tabKey = `milvus_${milvusId}_${acName}`;
-    // 标签页显示名：milvus实例名 + 用户名（如有）
-    const tabLabel = acUsername ? `${milvus.name} (${acUsername})` : milvus.name;
-
-    const compRef = await node.ctx?.addResourceComponent({
-        ...MilvusOpComp,
-        tabKey,
-        tabLabel,
-        tabProps: { milvusId, acName, tabKey },
-    });
     // 仅在首次创建时初始化（已存在的标签页只是激活，不重置状态）
+    const compRef = await getMilvusOpTabCompInst(milvus, acName);
     compRef?.initMilvus?.(milvus);
 });
 

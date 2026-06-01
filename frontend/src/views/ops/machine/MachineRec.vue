@@ -97,14 +97,18 @@ const state = reactive({
 
 const { dialogVisible, query, playerDialogVisible, execCmdsDialogVisible } = toRefs(state);
 
-watch(props, async (newValue: any) => {
-    const visible = newValue.visible;
-    state.dialogVisible = visible;
-    if (visible) {
-        state.query.machineId = newValue.machineId;
-        state.title = newValue.title;
-    }
-});
+watch(
+    props,
+    async (newValue: any) => {
+        const visible = newValue.visible;
+        state.dialogVisible = visible;
+        if (visible) {
+            state.query.machineId = newValue.machineId;
+            state.title = newValue.title;
+        }
+    },
+    { immediate: true }
+);
 
 const getTermOps = async () => {
     pageTableRef.value.search();

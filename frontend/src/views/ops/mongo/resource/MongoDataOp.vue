@@ -61,7 +61,12 @@
 
                                             <el-divider direction="vertical" border-style="dashed" />
 
-                                            <el-popconfirm @confirm="onDeleteDoc(item.value)" :title="$t('mongo.deleteDocConfirm')" width="160" :teleported="false">
+                                            <el-popconfirm
+                                                @confirm="onDeleteDoc(item.value)"
+                                                :title="$t('mongo.deleteDocConfirm')"
+                                                width="160"
+                                                :teleported="false"
+                                            >
                                                 <template #reference>
                                                     <el-link v-auth="perms.delData" underline="never" type="danger" icon="DocumentDelete"> </el-link>
                                                 </template>
@@ -121,9 +126,8 @@ import { isTrue, notBlank } from '@/common/assert';
 import { formatByteSize } from '@/common/utils/format';
 import { Msg } from '@/hooks/useI18n';
 import { mongoApi } from '@/views/ops/mongo/api';
-import { MongoOpComp } from '@/views/ops/mongo/resource';
-import { ResourceOpCtxKey } from '@/views/ops/resource/resource';
-import { computed, defineAsyncComponent, getCurrentInstance, inject, onMounted, reactive, ref, toRefs } from 'vue';
+import { ResourceOpCtxKey } from '@/views/ops/resource/resourceOp';
+import { computed, defineAsyncComponent, inject, onMounted, reactive, ref, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ResourceOpCtx } from '../../component/tag';
 
@@ -183,9 +187,7 @@ const nowColl = computed(() => {
     return getNowDataTab();
 });
 
-onMounted(() => {
-    emits('init', { name: MongoOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
-});
+onMounted(() => {});
 
 const changeCollection = async (id: any, schema: string, collection: string) => {
     const label = `${schema}.${collection}`;

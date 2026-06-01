@@ -42,18 +42,17 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeMount, onMounted, onActivated, ref, getCurrentInstance } from 'vue';
-import Databases from '../components/Databases.vue';
+import { setCurrentAcName } from '@/views/ops/milvus/resource/authCert';
+import { useMilvusStore } from '@/views/ops/milvus/resource/store';
+import { onActivated, onBeforeMount, onMounted, ref } from 'vue';
 import Collections from '../components/Collections.vue';
+import Databases from '../components/Databases.vue';
 import DataOperation from '../components/DataOperation.vue';
 import Partitions from '../components/Partitions.vue';
-import Users from '../components/Users.vue';
-import Roles from '../components/Roles.vue';
 import ResourceGroups from '../components/ResourceGroups.vue';
+import Roles from '../components/Roles.vue';
 import SystemInfo from '../components/SystemInfo.vue';
-import { MilvusOpComp } from '@/views/ops/milvus/resource/index';
-import { useMilvusStore } from '@/views/ops/milvus/resource/store';
-import { setCurrentAcName } from '@/views/ops/milvus/resource/authCert';
+import Users from '../components/Users.vue';
 
 const props = defineProps<{
     milvusId: number;
@@ -92,9 +91,7 @@ const onUseDb = (_db: string) => {
     activeTab.value = 'collections';
 };
 
-onMounted(() => {
-    emits('init', { name: MilvusOpComp.name, tabKey: props.tabKey, ref: getCurrentInstance()?.exposed });
-});
+onMounted(() => {});
 
 // keep-alive 激活时重新同步全局 ac（确保切换标签后 API 调用正确）
 onActivated(() => {

@@ -1,7 +1,9 @@
-import { defineAsyncComponent } from 'vue';
-import { NodeType, TagTreeNode, ResourceComponentConfig, ResourceConfig } from '../../component/tag';
 import { ResourceTypeEnum, TagResourceTypeEnum } from '@/common/commonEnum';
 import { sleep } from '@/common/utils/loading';
+import type { ResourceConfig } from '@/views/ops/resource/resource';
+import { createResourceOpTab } from '@/views/ops/resource/resourceOp';
+import { defineAsyncComponent } from 'vue';
+import { NodeType, TagTreeNode } from '../../component/tag';
 import { mongoApi } from '../api';
 
 const Icon = {
@@ -15,10 +17,18 @@ const MongoDataOp = defineAsyncComponent(() => import('./MongoDataOp.vue'));
 const NodeMongo = defineAsyncComponent(() => import('./NodeMongo.vue'));
 const NodeMongoDb = defineAsyncComponent(() => import('./NodeMongoDb.vue'));
 
-export const MongoOpComp: ResourceComponentConfig = {
-    name: 'tag.mongoDataOp',
-    component: MongoDataOp,
-    icon: Icon,
+const getMongoOpTab = async (inst: any) => {
+    const tabKey = `mongo_${inst.id}`;
+    return await createResourceOpTab({
+        key: tabKey,
+        name: inst.instName || inst.name,
+        component: MongoDataOp,
+        tabComponentProps: { icon: Icon },
+    });
+};
+
+const getMongoOpTabCompInst = async (inst: any) => {
+    return (await getMongoOpTab(inst)).componentInstance;
 };
 
 // tagpath 节点类型
@@ -39,32 +49,25 @@ const NodeTypeMongoTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
 const NodeTypeMongo = new NodeType(1)
     .withNodeClickFunc(async (node: TagTreeNode) => {
         const inst = node.params;
-        const tabKey = `mongo_${inst.id}`;
-        const tabLabel = inst.name;
-        await node.ctx?.addResourceComponent({
-            ...MongoOpComp,
-            tabKey,
-            tabLabel,
-            tabProps: { tabKey },
-        });
+        await getMongoOpTabCompInst(inst);
     })
     .withLoadNodesFunc(async (parentNode: TagTreeNode) => {
-    const inst = parentNode.params;
-    // 点击mongo -> 加载mongo数据库列表
-    const res = await mongoApi.databases.request({ id: inst.id });
-    return res.Databases.map((x: any) => {
-        const database = x.Name;
-        return TagTreeNode.new(parentNode, `${inst.id}.${database}`, database, NodeTypeDbs)
-            .withParams({
-                id: inst.id,
-                instName: inst.name,
-                database,
-                size: x.SizeOnDisk,
-            })
-            .withIcon({ name: 'Coin', color: '#67c23a' })
-            .withNodeComponent(NodeMongoDb);
+        const inst = parentNode.params;
+        // 点击mongo -> 加载mongo数据库列表
+        const res = await mongoApi.databases.request({ id: inst.id });
+        return res.Databases.map((x: any) => {
+            const database = x.Name;
+            return TagTreeNode.new(parentNode, `${inst.id}.${database}`, database, NodeTypeDbs)
+                .withParams({
+                    id: inst.id,
+                    instName: inst.name,
+                    database,
+                    size: x.SizeOnDisk,
+                })
+                .withIcon({ name: 'Coin', color: '#67c23a' })
+                .withNodeComponent(NodeMongoDb);
+        });
     });
-});
 
 const NodeTypeDbs = new NodeType(2).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
     const params = parentNode.params;
@@ -95,14 +98,8 @@ const NodeTypeCollMenu = new NodeType(3).withLoadNodesFunc(async (parentNode: Ta
 
 const NodeTypeColl = new NodeType(4).withNodeClickFunc(async (nodeData: TagTreeNode) => {
     const { id, database, collection, instName } = nodeData.params;
-    const tabKey = `mongo_${id}`;
-    const tabLabel = instName || `mongo_${id}`;
-    const compRef = await nodeData.ctx?.addResourceComponent({
-        ...MongoOpComp,
-        tabKey,
-        tabLabel,
-        tabProps: { tabKey },
-    });
+    const inst = { id, instName };
+    const compRef = await getMongoOpTabCompInst(inst);
     compRef?.changeCollection?.(id, database, collection);
 });
 

@@ -1,6 +1,13 @@
 <template>
     <div class="file-manage">
-        <el-dialog :title="$t('machine.process')" v-model="dialogVisible" :destroy-on-close="true" :show-close="true" :before-close="handleClose" width="65%">
+        <el-dialog
+            :title="$t('machine.process') + `: ${title}`"
+            v-model="dialogVisible"
+            :destroy-on-close="true"
+            :show-close="true"
+            :before-close="handleClose"
+            width="65%"
+        >
             <div class="card p-1!">
                 <el-row>
                     <el-col :span="4">
@@ -123,14 +130,6 @@ const state = reactive({
 
 const { dialogVisible, params, processList } = toRefs(state);
 
-watch(props, (newValue) => {
-    if (props.machineId) {
-        state.params.id = props.machineId;
-        getProcess();
-    }
-    state.dialogVisible = newValue.visible;
-});
-
 const getProcess = async () => {
     const res = await machineApi.process.request(state.params);
     // 解析字符串
@@ -172,6 +171,18 @@ const getProcess = async () => {
     }
     state.processList = ps as any;
 };
+
+watch(
+    props,
+    (newValue) => {
+        if (props.machineId) {
+            state.params.id = props.machineId;
+            getProcess();
+        }
+        state.dialogVisible = newValue.visible;
+    },
+    { immediate: true }
+);
 
 const confirmKillProcess = async (pid: any) => {
     await machineApi.killProcess.request({

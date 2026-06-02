@@ -439,13 +439,17 @@ const activateTab = (tabKey: string) => {
 const closeTab = (tabKey: string) => {
     // 清除组件实例和缓存
     removeResourceOpTab(tabKey);
-
+    getComponentInstance<any>(tabKey)?.onClose?.();
+    
+    
     // 如果关闭的是当前活动标签，切换到相邻标签
     if (activeResourceOpTabKey.value === tabKey) {
         const remainingTabs: string[] = Array.from(allResourceOpTabs.keys());
         if (remainingTabs.length > 0) {
             // 切换到最后一个tab
             activateTab(remainingTabs[remainingTabs.length - 1]);
+        }else{
+            activeResourceOpTabKey.value = ''
         }
     }
 };

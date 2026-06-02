@@ -21,7 +21,7 @@
                 </template>
             </el-table-column>
             <el-table-column prop="ProtocolType" :label="$t('mq.kafka.protocolType')" min-width="150" />
-            <el-table-column :label="$t('common.operation')" width="150" fixed="right">
+            <el-table-column :label="$t('common.operation')" width="200" fixed="right" align="center">
                 <template #default="{ row }">
                     <el-button @click="handleGetGroupMembers(row)" size="small" icon="setting" link>
                         {{ $t('mq.kafka.Members') }}
@@ -32,6 +32,41 @@
                 </template>
             </el-table-column>
         </el-table>
+
+        <el-drawer
+            :append-to-body="false"
+            v-model="membersDrawerVisible"
+            :destroy-on-close="true"
+            :close-on-click-modal="true"
+            size="70%"
+            :title="$t('mq.kafka.groupMembers') + ' - ' + selectedGroup?.Group"
+            class="members-drawer"
+        >
+            <div class="drawer-body">
+                <el-table :data="groupMembers" stripe v-loading="membersLoading" height="100%">
+                    <el-table-column type="index" label="#" width="50" />
+                    <el-table-column prop="ClientHost" :label="$t('mq.kafka.clientHost')" min-width="140" />
+                    <el-table-column prop="ClientID" :label="$t('mq.kafka.clientID')" min-width="100" />
+                    <el-table-column prop="InstanceID" :label="$t('mq.kafka.instanceID')" min-width="120">
+                        <template #default="{ row }">
+                            {{ row.InstanceID ?? '-' }}
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="MemberID" :label="$t('mq.kafka.memberID')" min-width="280" />
+                    <el-table-column :label="$t('mq.kafka.assignedTopics')" min-width="260">
+                        <template #default="{ row }">
+                            <div v-if="row.TPs && Object.keys(row.TPs).length" class="flex flex-col gap-1">
+                                <div v-for="(partitions, topic) in row.TPs" :key="topic" class="text-xs">
+                                    <span class="font-medium">{{ topic }}</span>:
+                                    <el-tag v-for="p in partitions" :key="p" size="small" class="ml-1" type="info">{{ p }}</el-tag>
+                                </div>
+                            </div>
+                            <span v-else class="text-gray-400">-</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+        </el-drawer>
     </div>
 </template>
 
@@ -46,6 +81,14 @@ export interface ConsumerGroup {
     State: string;
     ProtocolType: string;
     Group: string;
+}
+
+interface GroupMember {
+    ClientHost: string;
+    ClientID: string;
+    InstanceID: string | null;
+    MemberID: string;
+    TPs: Record<string, number[]>;
 }
 
 const { t } = useI18n();
@@ -68,6 +111,10 @@ const props = defineProps({
 const emits = defineEmits(['refresh']);
 
 const searchGroup = ref('');
+const membersDrawerVisible = ref(false);
+const membersLoading = ref(false);
+const selectedGroup = ref<ConsumerGroup | null>(null);
+const groupMembers = ref<GroupMember[]>([]);
 
 const filteredGroups = computed(() => {
     if (!searchGroup.value) {
@@ -94,14 +141,19 @@ const handleDeleteGroup = async (group: ConsumerGroup) => {
     }
 };
 const handleGetGroupMembers = async (group: ConsumerGroup) => {
+    selectedGroup.value = group;
+    membersDrawerVisible.value = true;
+    membersLoading.value = true;
     try {
-        let res = await mqApi.kafkaGetGroupMembers.request({
+        const res = await mqApi.kafkaGetGroupMembers.request({
             id: props.kafkaId,
             group: group.Group,
         });
-        console.log(res);
+        groupMembers.value = (res as GroupMember[]) || [];
     } catch (error: any) {
         Msg.error(error.message || 'common.requestFail');
+    } finally {
+        membersLoading.value = false;
     }
 };
 
@@ -127,5 +179,21 @@ const getStateTagType = (state: string) => {
         justify-content: space-between;
         align-items: center;
     }
+}
+
+.members-drawer :deep(.el-drawer__body) {
+    padding: 8px;
+    overflow: hidden;
+}
+
+.drawer-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.drawer-body .el-table {
+    flex: 1;
+    min-height: 0;
 }
 </style>

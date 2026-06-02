@@ -38,10 +38,10 @@
                     <el-tag :type="row.isInternal ? 'success' : 'danger'" size="small">{{ row.isInternal ? 'Y' : 'N' }}</el-tag>
                 </template>
             </el-table-column>
-            <el-table-column :label="$t('common.operation')" width="130" fixed="right">
+            <el-table-column :label="$t('common.operation')" width="130" align="center">
                 <template #default="{ row }">
-                    <el-dropdown trigger="click" @command="handleTopicCommand($event, row)" :teleported="false">
-                        <el-button size="small" icon="more">
+                    <el-dropdown trigger="click" @command="handleTopicCommand($event, row)" >
+                        <el-button type="primary" size="small" link>
                             {{ $t('common.operation') }}
                         </el-button>
                         <template #dropdown>

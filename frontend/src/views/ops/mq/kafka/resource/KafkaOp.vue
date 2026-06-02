@@ -1,6 +1,6 @@
 <template>
     <div class="kafka-op h-full">
-        <el-tabs v-model="activeTab" class="h-full" @tab-click="handleTabClick">
+        <el-tabs v-model="activeTab" class="h-full" @tab-click="handleTabClick" v-loading="loading">
             <el-tab-pane :label="$t('mq.kafka.nodeManage')" name="node">
                 <node-manage v-show="activeTab === 'node'" :kafka-id="kafkaId" />
             </el-tab-pane>
@@ -118,10 +118,15 @@ const handleConsumeMessage = (topic: string) => {
     activeTab.value = 'consume';
 };
 
-onMounted(() => {});
-
 defineExpose({
     initKafka,
+    onRefresh: ()=>{initKafka({id:kafkaId.value})},
+    onClose: ()=>{
+        kafkaId.value = 0;
+        selectedTopic.value = '';
+        topics.value = [];
+        groups.value = [];
+    }
 });
 </script>
 

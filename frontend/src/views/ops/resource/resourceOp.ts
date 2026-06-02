@@ -94,13 +94,17 @@ export function createResourceOpTab(tab: ResourceOpTab): Promise<ResourceOpTab> 
         activeResourceOpTabKey.value = tab.key;
     }
 
-    // 等待组件实例就绪后返回 tab 配置
-    return new Promise((resolve) => {
+    // 等待组件实例就绪后返回 tab 配置，超时 2000ms 后停止重试
+    return new Promise((resolve, reject) => {
+        let startTime = 0;
         const checkInstance = () => {
+            startTime += 10 ;
             if (tab.componentInstance) {
                 resolve(tab);
-            } else {
+            } else if (startTime < 2000) {
                 setTimeout(checkInstance, 10);
+            } else {
+                reject(new Error(`等待组件实例超时: ${tab.key}`));
             }
         };
         nextTick().then(() => checkInstance());

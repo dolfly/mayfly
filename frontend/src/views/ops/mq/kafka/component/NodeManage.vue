@@ -10,7 +10,7 @@
             <el-table-column prop="id" :label="$t('mq.kafka.nodeId')" min-width="100" />
             <el-table-column prop="addr" :label="$t('mq.kafka.addr')" min-width="100" />
             <el-table-column prop="rack" :label="$t('mq.kafka.rack')" min-width="150" />
-            <el-table-column :label="$t('common.operation')" width="120" fixed="right">
+            <el-table-column :label="$t('common.operation')" width="120" fixed="right" align="center">
                 <template #default="{ row }">
                     <el-button @click="viewBrokerConfig(row)" type="primary" size="small" icon="setting" link>
                         {{ $t('mq.kafka.viewConfig') }}
@@ -24,31 +24,35 @@
             v-model="openDrawer"
             :before-close="cancel"
             :destroy-on-close="true"
-            :close-on-click-modal="false"
+            :close-on-click-modal="true"
             size="80%"
             :title="$t('mq.kafka.brokerConfig') + selectedBroker?.addr"
+            class="broker-config-drawer"
+            :with-header="false"
         >
-            <div class="toolbar">
-                <div class="">
-                    <el-input v-model="searchConfig" :placeholder="$t('mq.kafka.configName')" clearable size="small" class="w-60 mb-2" />
+            <div class="drawer-body">
+                <div class="toolbar">
+                    <div class="">
+                        <el-input v-model="searchConfig" :placeholder="$t('mq.kafka.configName')" clearable size="small" class="w-60 mb-2" />
+                    </div>
+                    <span class="text-sm text-gray-500">{{ `count: ${filteredBrokerConfigs.length}` }}</span>
                 </div>
-                <span class="text-sm text-gray-500">{{ `count: ${filteredBrokerConfigs.length}` }}</span>
-            </div>
 
-            <el-table :data="filteredBrokerConfigs" stripe style="width: 100%" v-loading="loading">
-                <el-table-column type="index" label="#" width="50" />
-                <el-table-column prop="Key" :label="$t('mq.kafka.configName')" min-width="200" />
-                <el-table-column prop="Value" :label="$t('mq.kafka.configValue')" min-width="300" />
-                <el-table-column prop="Source" :label="$t('mq.kafka.configSource')" min-width="150" />
-                <el-table-column prop="Sensitive" :label="$t('mq.kafka.configSensitive')" min-width="150" />
-            </el-table>
+                <el-table :data="filteredBrokerConfigs" stripe style="width: 100%" v-loading="loading" height="100%">
+                    <el-table-column type="index" label="#" width="50" />
+                    <el-table-column prop="Key" :label="$t('mq.kafka.configName')" min-width="200" />
+                    <el-table-column prop="Value" :label="$t('mq.kafka.configValue')" min-width="300" />
+                    <el-table-column prop="Source" :label="$t('mq.kafka.configSource')" min-width="150" />
+                    <el-table-column prop="Sensitive" :label="$t('mq.kafka.configSensitive')" min-width="150" />
+                </el-table>
+            </div>
         </el-drawer>
     </div>
 </template>
 
 <script lang="ts" setup>
 import { Msg } from '@/hooks/useI18n';
-import { computed, onMounted, reactive, ref, toRefs } from 'vue';
+import {computed, nextTick, onMounted, reactive, ref, toRefs} from 'vue';
 import { mqApi } from '../../api';
 
 interface Broker {
@@ -96,9 +100,7 @@ const filteredBrokerConfigs = computed(() => {
     return state.brokerConfigs.filter((config: BrokerConfig) => config.Key.toLowerCase().includes(searchConfig.value.toLowerCase()));
 });
 
-onMounted(() => {
-    refreshBrokers();
-});
+onMounted(() => setTimeout(()=>nextTick(refreshBrokers), 500) );
 
 const refreshBrokers = async () => {
     loading.value = true;
@@ -121,13 +123,20 @@ const viewBrokerConfig = async (broker: Broker) => {
             id: props.kafkaId,
             brokerId: broker.id,
         });
-
-        if (res && res[broker.id].Configs) {
-            res[broker.id].Configs.sort((a: any, b: any) => (a['Key'] > b['Key'] ? 1 : -1));
-            state.brokerConfigs = res && res[broker.id].Configs;
-        } else {
-            state.brokerConfigs = [];
+        try {
+            if (res && res[broker.id] && res[broker.id].Configs) {
+                res[broker.id].Configs.sort((a: any, b: any) => (a['Key'] > b['Key'] ? 1 : -1));
+                state.brokerConfigs = res && res[broker.id].Configs;
+            }  else if(res &&res.length > 0){
+                state.brokerConfigs = res.filter((a: any)=>a.Name==1)[0]['Configs']
+            }  else {
+                state.brokerConfigs = [];
+            }
+        }catch (e){
+            Msg.error('解析kafka配置信息失败,请查看控制台日志');
+            console.error('解析kafka配置信息失败', e, res)
         }
+        
     } catch (error: any) {
         Msg.error(error.message || 'common.requestFail');
     } finally {
@@ -137,6 +146,23 @@ const viewBrokerConfig = async (broker: Broker) => {
 </script>
 
 <style lang="scss" scoped>
+.broker-config-drawer :deep(.el-drawer__body) {
+    padding: 8px;
+    overflow: hidden;
+}
+
+.drawer-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 8px;
+}
+
+.drawer-body .el-table {
+    flex: 1;
+    min-height: 0;
+}
+
 .kafka-node-manage :deep(.el-table) {
     flex: 1;
     min-height: 0;
@@ -146,5 +172,6 @@ const viewBrokerConfig = async (broker: Broker) => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 </style>

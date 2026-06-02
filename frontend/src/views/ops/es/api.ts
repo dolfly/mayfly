@@ -7,6 +7,8 @@ export const esApi = {
     deleteInstance: Api.newDelete('/es/instance/{id}'),
     saveInstance: Api.newPost('/es/instance'),
     testConn: Api.newPost('/es/instance/test-conn'),
+    exportData: Api.newPost('/es/instance/export/{instanceId}'),
+    exportProgress: Api.newGet('/es/instance/export/progress/{exportId}'),
 
     // proxyGet: Api.newGet('/es/instance/proxy/{id}/{path}'),
     // proxyPost: Api.newPost('/es/instance/proxy/{id}/{path}'),

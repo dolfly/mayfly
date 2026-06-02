@@ -368,6 +368,9 @@ let nowUpdateCell: Ref<NowUpdateCell> = ref(null) as any;
 // 选中的数据， key->rowIndex  value->primaryKeyValue
 const selectionRowsMap = ref(new Map<number, any>());
 
+// 最后一次点击的行索引，用于 shift 批量选择
+let lastSelectedRowIndex: number | null = null;
+
 // 更新单元格  key-> rowIndex  value -> 更新行
 const cellUpdateMap = ref(new Map<number, UpdatedRow>());
 
@@ -525,6 +528,7 @@ const setTableData = (datas: any) => {
     tableRef.value?.scrollTo({ scrollLeft: 0, scrollTop: 0 });
     selectionRowsMap.value.clear();
     cellUpdateMap.value.clear();
+    lastSelectedRowIndex = null;
     // formatDataValues(datas);
     state.datas = datas;
     setTableColumns(props.columns);
@@ -650,7 +654,7 @@ const isSelection = (rowIndex: number): boolean => {
  */
 const selectionRow = (rowIndex: number, rowData: any, isMultiple = false) => {
     if (isMultiple) {
-        // 如果重复点击，则取消改选中数据
+        // 如果重复点击，则取消该选中数据
         if (selectionRowsMap.value.get(rowIndex)) {
             selectionRowsMap.value.delete(rowIndex);
             return;
@@ -659,6 +663,21 @@ const selectionRow = (rowIndex: number, rowData: any, isMultiple = false) => {
         selectionRowsMap.value.clear();
     }
     selectionRowsMap.value.set(rowIndex, rowData);
+    lastSelectedRowIndex = rowIndex;
+};
+
+/**
+ * Shift 批量选择：选中起始行到当前行之间的所有行
+ */
+const selectionRowRange = (startIndex: number, endIndex: number) => {
+    const from = Math.min(startIndex, endIndex);
+    const to = Math.max(startIndex, endIndex);
+    for (let i = from; i <= to; i++) {
+        const rowData = state.datas[i];
+        if (rowData) {
+            selectionRowsMap.value.set(i, rowData);
+        }
+    }
 };
 
 /**
@@ -669,9 +688,15 @@ const rowEventHandlers = {
         const event = e.event;
         const rowIndex = e.rowIndex;
         const rowData = e.rowData;
-        // 按住ctrl点击，则新建标签页打开, metaKey对应mac command键
+        // 按住ctrl/meta点击，则多选切换
         if (event.ctrlKey || event.metaKey) {
             selectionRow(rowIndex, rowData, true);
+            return;
+        }
+        // 按住shift点击，则批量选择起始行到当前行
+        if (event.shiftKey && lastSelectedRowIndex !== null) {
+            selectionRowsMap.value.clear();
+            selectionRowRange(lastSelectedRowIndex, rowIndex);
             return;
         }
         selectionRow(rowIndex, rowData);

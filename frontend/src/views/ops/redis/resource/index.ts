@@ -28,7 +28,7 @@ const NodeTypeRedisTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
     await sleep(100);
     return redisInfos.map((x: any) => {
         x.tagPath = parentNode.key;
-        return TagTreeNode.new(parentNode, `redis.${x.code}`, x.name, NodeTypeRedis).withParams(x).withNodeComponent(NodeRedis);
+        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeRedis).withParams(x).withNodeComponent(NodeRedis);
     });
 });
 
@@ -74,7 +74,7 @@ const NodeTypeRedis = new NodeType(2).withLoadNodesFunc(async (parentNode: TagTr
 const NodeTypeDb = new NodeType(21).withNodeClickFunc(async (node: TagTreeNode) => {
     const params = node.params;
 
-    const key = `redis.${params.code}`;
+    const key = `${params.code}`;
     const resourceOpTab = await createResourceOpTab({
         key,
         name: `${params.redisName}`,

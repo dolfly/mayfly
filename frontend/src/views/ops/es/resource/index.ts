@@ -27,14 +27,14 @@ const NodeTypeEsTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(async 
     await sleep(100);
     return insts?.map((x: any) => {
         x.tagPath = parentNode.key;
-        return TagTreeNode.new(parentNode, `es.${x.code}`, x.name, NodeTypeInst).withNodeComponent(NodeEs).withIsLeaf(true).withParams(x);
+        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeInst).withNodeComponent(NodeEs).withIsLeaf(true).withParams(x);
     });
 });
 
 // 加载实例列表
 const NodeTypeInst = new NodeType(1).withNodeClickFunc(async (nodeData: TagTreeNode) => {
     const inst = nodeData.params;
-    const tabKey = `es.${inst.code}`;
+    const tabKey = `${inst.code}`;
     createResourceOpTab({
         key: tabKey,
         name: inst.name,

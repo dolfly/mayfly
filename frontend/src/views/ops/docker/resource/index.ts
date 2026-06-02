@@ -14,7 +14,7 @@ const Icon = {
 };
 
 const getContainerOpTab = async (container: any) => {
-    const tabKey = `container.${container.code}`;
+    const tabKey = `${container.code}`;
     return await createResourceOpTab({
         key: tabKey,
         name: container.name,
@@ -33,7 +33,7 @@ export const NodeTypeContainerTag = new NodeType(TagTreeNode.TagPath).withLoadNo
     // 把list 根据name字段排序
     return res?.list
         .sort((a: any, b: any) => a.name.localeCompare(b.name))
-        .map((x: any) => TagTreeNode.new(node, `container.${x.code}`, x.name, NodeTypeContainer).withIsLeaf(true).withParams(x).withIcon(Icon));
+        .map((x: any) => TagTreeNode.new(node, `${x.code}`, x.name, NodeTypeContainer).withIsLeaf(true).withParams(x).withIcon(Icon));
 });
 
 const NodeTypeContainer = new NodeType(11).withNodeClickFunc(async (node: TagTreeNode) => {

@@ -31,7 +31,7 @@ export const NodeTypeMachineTag = new NodeType(TagTreeNode.TagPath).withLoadNode
     return res?.list
         .sort((a: any, b: any) => a.name.localeCompare(b.name))
         .map((x: any) =>
-            TagTreeNode.new(node, `machine.${x.code}`, x.name, NodeTypeMachine)
+            TagTreeNode.new(node, `${x.code}`, x.name, NodeTypeMachine)
                 .withParams(x)
                 .withDisabled(x.status == -1 && x.protocol == MachineProtocolEnum.Ssh.value)
                 .withIcon(MachineIcon)
@@ -107,7 +107,7 @@ export const NodeTypeAuthCert = new NodeType(12)
     .withNodeDblclickFunc(async (node: TagTreeNode) => {
         const m = node.params;
 
-        const key = `machine.${m.code}.${m.selectAuthCert.name}.${new Date().getTime()}`;
+        const key = `${m.code}.${m.selectAuthCert.name}.${new Date().getTime()}`;
         createResourceOpTab({
             key,
             name: `${m.selectAuthCert.username}@${m.name}`,
@@ -134,7 +134,7 @@ export const NodeTypeAuthCert = new NodeType(12)
             .withOnClick(async (node: TagTreeNode) => {
                 const m = node.params;
 
-                const key = `machine.${m.code}.${m.selectAuthCert.name}.${new Date().getTime()}`;
+                const key = `${m.code}.${m.selectAuthCert.name}.${new Date().getTime()}`;
                 createResourceOpTab({
                     key,
                     name: `${m.selectAuthCert.username}@${m.name}`,
@@ -188,7 +188,7 @@ export const NodeTypeAuthCert = new NodeType(12)
             const acName = m.selectAuthCert.name;
 
             // 直接打开文件管理 tab，FileTab 内部会处理配置选择
-            const tabKey = `machine.${m.code}.${acName}`;
+            const tabKey = `${m.code}.${acName}`;
             createResourceOpTab({
                 key: tabKey,
                 name: `${m.selectAuthCert.username}@${m.name}`,

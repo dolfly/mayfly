@@ -108,6 +108,7 @@ const blur = () => {
 defineExpose({
     onRefresh: handleReconnect,
     onActivate: focus,
+    onResize: fitTerminal,
     close,
     fitTerminal,
     focus,

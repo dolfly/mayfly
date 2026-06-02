@@ -94,17 +94,23 @@ export function createResourceOpTab(tab: ResourceOpTab): Promise<ResourceOpTab> 
         activeResourceOpTabKey.value = tab.key;
     }
 
-    // 等待组件实例就绪后返回 tab 配置，超时 2000ms 后停止重试
-    return new Promise((resolve, reject) => {
-        let startTime = 0;
+    // 已有实例直接返回，避免无谓轮询
+    if (tab.componentInstance) {
+        return Promise.resolve(tab);
+    }
+
+    // 等待组件实例就绪后返回 tab 配置
+    return new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 100; // 最多重试100次，防止无限轮询
         const checkInstance = () => {
-            startTime += 10 ;
             if (tab.componentInstance) {
                 resolve(tab);
-            } else if (startTime < 2000) {
-                setTimeout(checkInstance, 10);
+            } else if (++attempts < maxAttempts) {
+                setTimeout(checkInstance, 50);
             } else {
-                reject(new Error(`等待组件实例超时: ${tab.key}`));
+                // 超时仍返回 tab，避免 Promise 永远 pending
+                resolve(tab);
             }
         };
         nextTick().then(() => checkInstance());
@@ -116,6 +122,11 @@ export function createResourceOpTab(tab: ResourceOpTab): Promise<ResourceOpTab> 
  * @param key tab key
  */
 export function removeResourceOpTab(key: string) {
+    const tab = allResourceOpTabs.get(key);
+    if (tab) {
+        // 清除实例引用，辅助 GC 回收组件实例
+        tab.componentInstance = undefined;
+    }
     allResourceOpTabs.delete(key);
 }
 

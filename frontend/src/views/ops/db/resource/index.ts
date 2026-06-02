@@ -40,7 +40,7 @@ const SqlIcon = {
 };
 
 const getDbOpTab = async (params: any) => {
-    const tabKey = `db.${params.instCode}.${params.dbCode}.${params.db}`;
+    const tabKey = `${params.instCode}.${params.dbCode}.${params.db}`;
     return await createResourceOpTab({
         key: tabKey,
         name: `${params.name}/${params.db}`,
@@ -85,7 +85,7 @@ export const NodeTypeDbInst = new NodeType(TagResourceTypeEnum.DbInstance.value)
     return dbInstances?.map((x: any) => {
         x.tagPath = tagPath;
         x.instCode = x.code;
-        return TagTreeNode.new(parentNode, `db.${x.code}`, x.name, NodeTypeDbConf).withParams(x).withNodeComponent(NodeDbInst);
+        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeDbConf).withParams(x).withNodeComponent(NodeDbInst);
     });
 });
 

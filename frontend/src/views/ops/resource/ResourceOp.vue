@@ -116,7 +116,7 @@
                         </div>
                     </div>
                     <div class="resource-tab-content">
-                        <keep-alive>
+                        <keep-alive :max="20">
                             <component
                                 ref="activeCompRef"
                                 :is="activeResourceTab?.component"
@@ -133,7 +133,7 @@
         <Contextmenu :dropdown="tabDropdown" :items="tabContextmenuItems" ref="tabContextmenuRef" />
 
         <!-- 渲染注册的非 tab 组件（Overlay） -->
-        <template v-for="overlay in Array.from(allResourceOpOverlays.values())" :key="overlay.key">
+        <template v-for="overlay in overlayList" :key="overlay.key">
             <component v-if="overlay.visible" :is="overlay.component" v-bind="overlay.props" @update:visible="(val: boolean) => (overlay.visible = val)" />
         </template>
     </div>
@@ -205,6 +205,10 @@ const resourceTabs = computed(() => {
     return Array.from(allResourceOpTabs.values());
 });
 
+const overlayList = computed(() => {
+    return Array.from(allResourceOpOverlays.values());
+});
+
 // Tab 右键菜单
 const tabDropdown = reactive({ x: 0, y: 0 });
 const tabContextmenuItems = ref<ContextmenuItem[]>([]);
@@ -242,6 +246,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     document.removeEventListener('keydown', onFullscreenKeydown);
+    if (filterTimer) clearTimeout(filterTimer);
 });
 
 const activeCompRef = useTemplateRef<any>('activeCompRef');
@@ -259,13 +264,13 @@ const registerActiveComp = (tabKey: string) => {
 // 解决 keep-alive 场景下 :ref 回调不可靠的问题（缓存组件激活时 ref 回调不重新触发）
 watch(activeResourceOpTabKey, (tabKey: string) => {
     if (!tabKey) return;
+    let attempts = 0;
+    const maxAttempts = 50; // 最多重试50次，防止无限轮询
     // 异步组件可能需要多轮 nextTick 才能拿到实例
     const tryRegister = () => {
         nextTick(() => {
-            if (!registerActiveComp(tabKey)) {
-                // 实例尚未就绪，继续轮询
-                setTimeout(tryRegister, 10);
-            }
+            if (registerActiveComp(tabKey) || ++attempts >= maxAttempts) return;
+            setTimeout(tryRegister, 50);
         });
     };
     tryRegister();
@@ -283,8 +288,12 @@ const state = reactive({
 
 const { filterText } = toRefs(state);
 
-watch(filterText, (val) => {
-    treeRef.value?.filter(val);
+let filterTimer: ReturnType<typeof setTimeout> | null = null;
+watch(filterText, (val: string) => {
+    if (filterTimer) clearTimeout(filterTimer);
+    filterTimer = setTimeout(() => {
+        treeRef.value?.filter(val);
+    }, 300);
 });
 
 watch(
@@ -425,6 +434,9 @@ const onNodeContextmenu = (event: any, data: any) => {
 // 激活指定标签页
 const activateTab = (tabKey: string) => {
     activateResourceOpTab(tabKey);
+    if (!tabKey) {
+        return;
+    }
     // 定位到左侧资源树对应节点
     if (resourceComponentsNodeKey.value[tabKey]) {
         setCurrentKey(resourceComponentsNodeKey.value[tabKey]);
@@ -433,25 +445,6 @@ const activateTab = (tabKey: string) => {
         // 调用该tab的激活回调
         getComponentInstance<any>(tabKey)?.onActivate?.();
     });
-};
-
-// 关闭标签页
-const closeTab = (tabKey: string) => {
-    // 清除组件实例和缓存
-    removeResourceOpTab(tabKey);
-    getComponentInstance<any>(tabKey)?.onClose?.();
-    
-    
-    // 如果关闭的是当前活动标签，切换到相邻标签
-    if (activeResourceOpTabKey.value === tabKey) {
-        const remainingTabs: string[] = Array.from(allResourceOpTabs.keys());
-        if (remainingTabs.length > 0) {
-            // 切换到最后一个tab
-            activateTab(remainingTabs[remainingTabs.length - 1]);
-        }else{
-            activeResourceOpTabKey.value = ''
-        }
-    }
 };
 
 // 刷新标签页（通过改变 key 强制重新渲染）
@@ -469,14 +462,36 @@ const onTabContextmenu = (event: MouseEvent, tab: ResourceOpTab) => {
     tabContextmenuRef.value?.openContextmenu({ tabKey: tab.key });
 };
 
+// 关闭标签页
+const closeTab = (tabKey: string, isChangeTab: boolean = true) => {
+    // 清除组件实例和缓存
+    removeResourceOpTab(tabKey);
+    // 清理节点映射关系
+    delete resourceComponentsNodeKey.value[tabKey];
+    // 调用该 tab 的关闭回调
+    getComponentInstance<any>(tabKey)?.onClose?.();
+
+    // 如果关闭的是当前活动标签，切换到相邻标签
+    if (activeResourceOpTabKey.value === tabKey) {
+        const remainingTabs: string[] = Array.from(allResourceOpTabs.keys());
+        if (remainingTabs.length > 0) {
+            // 切换到最后一个tab
+            activateTab(remainingTabs[remainingTabs.length - 1]);
+        } else {
+            activeResourceOpTabKey.value = '';
+        }
+    }
+};
+
 // 关闭所有标签
 const closeAllTabs = () => {
     const allKeys: string[] = Array.from(allResourceOpTabs.keys());
     allKeys.forEach((key) => {
-        removeResourceOpTab(key);
+        closeTab(key, false);
     });
     allResourceOpTabs.clear();
-    activateResourceOpTab('');
+    resourceComponentsNodeKey.value = {};
+    activateTab('');
 };
 
 // 关闭左侧标签
@@ -486,11 +501,11 @@ const closeLeftTabs = (targetTabKey: string) => {
     if (targetIndex <= 0) return;
     const keysToClose = allKeys.slice(0, targetIndex);
     keysToClose.forEach((key: string) => {
-        removeResourceOpTab(key);
+        closeTab(key, false);
     });
     // 如果当前激活的标签被关闭，切换到目标标签
     if (keysToClose.includes(activeResourceOpTabKey.value)) {
-        activateResourceOpTab(targetTabKey);
+        activateTab(targetTabKey);
     }
 };
 
@@ -499,9 +514,9 @@ const closeOtherTabs = (targetTabKey: string) => {
     const allKeys: string[] = Array.from(allResourceOpTabs.keys());
     const keysToClose = allKeys.filter((key) => key !== targetTabKey);
     keysToClose.forEach((key: string) => {
-        removeResourceOpTab(key);
+        closeTab(key, false);
     });
-    activateResourceOpTab(targetTabKey);
+    activateTab(targetTabKey);
 };
 
 // 关闭右侧标签
@@ -511,11 +526,11 @@ const closeRightTabs = (targetTabKey: string) => {
     if (targetIndex === -1 || targetIndex === allKeys.length - 1) return;
     const keysToClose = allKeys.slice(targetIndex + 1);
     keysToClose.forEach((key: string) => {
-        removeResourceOpTab(key);
+        closeTab(key, false);
     });
     // 如果当前激活的标签被关闭，切换到目标标签
     if (keysToClose.includes(activeResourceOpTabKey.value)) {
-        activateResourceOpTab(targetTabKey);
+        activateTab(targetTabKey);
     }
 };
 
@@ -535,23 +550,25 @@ const getNode = (nodeKey: any) => {
 
 const setCurrentKey = (nodeKey: any) => {
     treeRef.value.setCurrentKey(nodeKey);
-
-    // 通过Id获取到对应的dom元素
-    const node = document.getElementById(nodeKey);
-    if (node) {
-        setTimeout(() => {
-            nextTick(() => {
-                // 通过scrollIntoView方法将对应的dom元素定位到可见区域 【block: 'center'】这个属性是在垂直方向居中显示
-                node.scrollIntoView({ block: 'center' });
-            });
-        }, 100);
-    }
+    // 延迟查询 DOM，确保节点已展开渲染，再用 rAF 滚动避免强制同步布局
+    setTimeout(() => {
+        requestAnimationFrame(() => {
+            document.getElementById(nodeKey)?.scrollIntoView({ block: 'center' });
+        });
+    }, 100);
 };
 
+let resizeRAF = 0;
 const onResizeOpPanel = () => {
-    for (const [tabKey] of allResourceOpTabs) {
-        getComponentInstance<any>(tabKey)?.onResize?.();
-    }
+    // 用 requestAnimationFrame 节流，Splitter 拖拽时高频触发 resize 事件
+    if (resizeRAF) return;
+    resizeRAF = requestAnimationFrame(() => {
+        resizeRAF = 0;
+        const key = activeResourceOpTabKey.value;
+        if (key) {
+            getComponentInstance<any>(key)?.onResize?.();
+        }
+    });
 };
 
 const ctx: ResourceOpCtx = {

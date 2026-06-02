@@ -18,7 +18,7 @@ const NodeMongo = defineAsyncComponent(() => import('./NodeMongo.vue'));
 const NodeMongoDb = defineAsyncComponent(() => import('./NodeMongoDb.vue'));
 
 const getMongoOpTab = async (inst: any) => {
-    const tabKey = `mongo.${inst.code}`;
+    const tabKey = `${inst.code}`;
     return await createResourceOpTab({
         key: tabKey,
         name: inst.instName || inst.name,
@@ -42,7 +42,7 @@ const NodeTypeMongoTag = new NodeType(TagTreeNode.TagPath).withLoadNodesFunc(asy
     await sleep(100);
     return mongoInfos?.map((x: any) => {
         x.tagPath = parentNode.key;
-        return TagTreeNode.new(parentNode, `mongo.${x.code}`, x.name, NodeTypeMongo).withParams(x).withNodeComponent(NodeMongo);
+        return TagTreeNode.new(parentNode, `${x.code}`, x.name, NodeTypeMongo).withParams(x).withNodeComponent(NodeMongo);
     });
 });
 

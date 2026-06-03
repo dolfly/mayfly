@@ -25,6 +25,7 @@
                             :filter-node-method="filterNode"
                             @node-click="treeNodeClick"
                             @node-expand="treeNodeClick"
+                            @node-collapse="onNodeCollapse"
                             @node-contextmenu="onNodeContextmenu"
                             :default-expanded-keys="state.defaultExpandedKeys"
                         >
@@ -406,6 +407,32 @@ const treeNodeDblclick = async (data: any, node: any) => {
     if (!data.disabled && data.type.nodeDblclickFunc) {
         await data.type.nodeDblclickFunc(data);
     }
+};
+
+// 递归查找子树中标记了 collapseRemoveChildren 的节点，删除其子节点
+const removeCollapseChildrenNodes = (node: any) => {
+    if (node.data?.type?.collapseRemoveChildren) {
+        // 找到标记节点，删除其所有子节点，不再往下递归
+        const childNodes = [...node.childNodes];
+        childNodes.forEach((child: any) => {
+            treeRef.value?.remove(child.data || child);
+        });
+        console.log('removeCollapseChildrenNodes ', node.data);
+        node.loaded = false;
+        node.loading = false;
+        node.isLeaf = false;
+        node.expanded = false;
+        return;
+    }
+    // 当前节点无标记，继续往子节点查找
+    for (const child of [...node.childNodes]) {
+        removeCollapseChildrenNodes(child);
+    }
+};
+
+// 树节点折叠事件 - 删除子树中标记了 collapseRemoveChildren 的节点的子节点，释放内存
+const onNodeCollapse = (data: any, node: any) => {
+    removeCollapseChildrenNodes(node);
 };
 
 // 树节点右击事件

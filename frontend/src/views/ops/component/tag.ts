@@ -120,6 +120,11 @@ export class NodeType {
     // 节点双击事件
     nodeDblclickFunc?: (node: TagTreeNode) => void;
 
+    /**
+     * 折叠时是否删除子节点以释放内存（展开时重新懒加载）
+     */
+    collapseRemoveChildren: boolean = false;
+
     constructor(value: number) {
         this.value = value;
     }
@@ -161,6 +166,14 @@ export class NodeType {
      */
     withContextMenuItems(contextMenuItems: ContextmenuItem[]) {
         this.contextMenuItems = contextMenuItems;
+        return this;
+    }
+
+    /**
+     * 设置折叠时是否删除子节点
+     */
+    withCollapseRemoveChildren(collapseRemoveChildren: boolean = true) {
+        this.collapseRemoveChildren = collapseRemoveChildren;
         return this;
     }
 }

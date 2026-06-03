@@ -5,6 +5,8 @@ go 1.26
 require (
 	gitee.com/chunanyong/dm v1.8.23
 	gitee.com/liuzongyang/libpq v1.10.11
+	github.com/ClickHouse/clickhouse-go/v2 v2.45.0
+	github.com/brianvoe/gofakeit/v7 v7.14.1
 	github.com/cloudwego/eino v0.9.2
 	github.com/cloudwego/eino-ext/components/model/openai v0.1.13
 	github.com/docker/docker v28.5.2+incompatible
@@ -32,12 +34,14 @@ require (
 	github.com/pquerna/otp v1.5.0
 	github.com/redis/go-redis/v9 v9.20.0
 	github.com/robfig/cron/v3 v3.0.1 // 定时任务
+	github.com/samber/lo v1.27.0
 	github.com/sijms/go-ora/v2 v2.9.0
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.19.0
 	github.com/twmb/franz-go v1.20.7
 	github.com/twmb/franz-go/pkg/kadm v1.17.2
+	github.com/xuri/excelize/v2 v2.10.1
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // mongo
 	golang.org/x/crypto v0.52.0
 	golang.org/x/oauth2 v0.36.0
@@ -48,13 +52,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.31.1
-)
-
-require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.45.0
-	github.com/brianvoe/gofakeit/v7 v7.14.1
-	github.com/samber/lo v1.27.0
-	github.com/xuri/excelize/v2 v2.10.1
 )
 
 require (

@@ -1,7 +1,7 @@
 <template>
     <div>
         <el-dialog
-            :title="$t('system.role.allocateMenuTitle', { roleName: roleInfo?.name })"
+            :title="$t('system.role.allocateMenuTitle', { roleName: props.role?.name })"
             v-model="visible"
             :before-close="onCancel"
             :show-close="false"
@@ -25,10 +25,8 @@
                 </template>
             </el-tree>
             <template #footer>
-                <div class="dialog-footer">
-                    <el-button :loading="state.submiting" @click="onCancel">{{ $t('common.cancel') }}</el-button>
-                    <el-button :loading="state.submiting" type="primary" @click="onConfirm">{{ $t('common.confirm') }}</el-button>
-                </div>
+                <el-button :loading="state.submiting" @click="onCancel">{{ $t('common.cancel') }}</el-button>
+                <el-button :loading="state.submiting" type="primary" @click="onConfirm">{{ $t('common.confirm') }}</el-button>
             </template>
         </el-dialog>
     </div>
@@ -37,7 +35,7 @@
 <script lang="ts" setup>
 import SvgIcon from '@/components/svgIcon/index.vue';
 import { Msg } from '@/hooks/useI18n';
-import { reactive, ref, toRefs, watch } from 'vue';
+import { reactive, ref } from 'vue';
 import { roleApi } from '../api';
 import { ResourceTypeEnum } from '../enums';
 import { getMenuIcon } from '../resource';
@@ -72,18 +70,8 @@ const defaultProps = {
 const menuTree: any = ref(null);
 
 const state = reactive({
-    roleInfo: null as any,
     submiting: false,
 });
-
-const { roleInfo } = toRefs(state);
-
-watch(
-    () => visible,
-    (newValue) => {
-        state.roleInfo = props.role;
-    }
-);
 
 const onConfirm = async () => {
     let menuIds = menuTree.value.getCheckedKeys();

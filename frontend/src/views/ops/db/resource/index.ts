@@ -191,6 +191,7 @@ export const NodeTypePostgresSchema = new NodeType(224).withContextMenuItems([Co
 
 // 数据库表菜单节点
 const NodeTypeTableMenu = new NodeType(4)
+    .withCollapseRemoveChildren()
     .withContextMenuItems([
         ContextmenuItemRefresh,
         new ContextmenuItem('createTable', 'db.createTable').withIcon('Plus').withOnClick(async (parentNode: TagTreeNode) => {
@@ -238,15 +239,12 @@ const NodeTypeTableMenu = new NodeType(4)
 // 数据库sql模板菜单节点
 const NodeTypeSqlMenu = new NodeType(225).withLoadNodesFunc(async (parentNode: TagTreeNode) => {
     const params = parentNode.params;
-    const id = params.id;
-    const db = params.db;
-    const dbs = params.dbs;
     // 加载用户保存的sql脚本
-    const sqls = await dbApi.getSqlNames.request({ id: id, db: db });
+    const sqls = await dbApi.getSqlNames.request({ id: params.id, db: params.db });
     return sqls.map((x: any) => {
         return TagTreeNode.new(parentNode, `${parentNode.key}.${x.name}`, x.name, NodeTypeSql)
             .withIsLeaf(true)
-            .withParams({ id, db, dbs, sqlName: x.name })
+            .withParams({ ...params, sqlName: x.name })
             .withIcon(SqlIcon);
     });
 });

@@ -24,6 +24,8 @@ import (
 	"mayfly-go/pkg/req"
 	"mayfly-go/pkg/starter"
 	"mayfly-go/static"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"runtime/debug"
 
@@ -39,6 +41,13 @@ func main() {
 		logx.Panicf("config init failed: %v", err)
 	}
 	printBanner()
+
+	go func() {
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			logx.Error(err.Error())
+		}
+		os.Exit(0)
+	}()
 
 	if err = starter.Run(config.Conf,
 		starter.WithOnDbReady(func(db *gorm.DB) error {

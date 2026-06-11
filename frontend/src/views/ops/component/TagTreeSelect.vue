@@ -70,7 +70,9 @@ const loadTagPaths = async () => {
 
     try {
         const res = await tagApi.listResourceTags.request({ resourceCode: props.code });
-        modelValue.value = res.map((t: any) => t.codePath) || [];
+        // 去重
+        const uniquePaths = [...new Set(res.map((t: any) => t.codePath))];
+        modelValue.value = modelValue.value = uniquePaths || [];
     } catch (error) {
         console.error('Failed to load tag paths:', error);
         modelValue.value = [];

@@ -1,59 +1,58 @@
 <template>
     <div class="component-container">
         <el-space>
-        <el-tooltip :content="t('db.selectDbPlaceholder')" placement="top" :teleported="false">
-            <el-select size="small" v-model="selectedDb" style="width: 150px" @change="onChangeDb" :teleported="false">
-                <el-option v-for="item in dbs" :key="item.name" :value="item.name">{{ item.name }}</el-option>
-            </el-select>
-        </el-tooltip>
-        <el-button size="small" type="primary" @click="handleCreate" icon="plus">{{ $t('milvus.createCollection') }}</el-button>
-        <el-button size="small" text icon="refresh" @click="loadList" :loading="loading" />
-    </el-space>
+            <el-tooltip :content="t('db.selectDbPlaceholder')" placement="top">
+                <el-select size="small" v-model="selectedDb" style="width: 150px" @change="onChangeDb">
+                    <el-option v-for="item in dbs" :key="item.name" :value="item.name">{{ item.name }}</el-option>
+                </el-select>
+            </el-tooltip>
+            <el-button size="small" type="primary" @click="handleCreate" icon="plus">{{ $t('milvus.createCollection') }}</el-button>
+            <el-button size="small" text icon="refresh" @click="loadList" :loading="loading" />
+        </el-space>
 
-    <el-table :data="list">
-        <el-table-column prop="name" :label="$t('common.name')" sortable width="220">
-            <template #default="{ row }">
-                <el-link type="primary" underline="never" @click="handleDataOperation(row.name)">{{ row.name }}</el-link>
-            </template>
-        </el-table-column>
-        <el-table-column prop="created_time" :label="$t('common.createTime')" sortable width="160" />
-        <el-table-column :label="$t('milvus.loadStatus')" width="100">
-            <template #default="{ row }">
-                <el-tag v-if="row.Loaded" type="success" @click="handleReleaseClick(row)" style="cursor: pointer">
-                    {{ $t('milvus.loaded') }}
-                </el-tag>
-                <el-tag v-else-if="row.LoadedPercentage > 0 && row.LoadedPercentage < 100" type="warning">
-                    {{ $t('milvus.loading') }} {{ row.LoadedPercentage }}%
-                </el-tag>
-                <el-tag v-else type="info" @click="handleLoadClick(row)" style="cursor: pointer">
-                    {{ $t('milvus.unloaded') }}
-                </el-tag>
-            </template>
-        </el-table-column>
-        <el-table-column :label="$t('milvus.aliases')" min-width="200">
-            <template #default="{ row }">
-                <div class="alias-container">
-                    <el-tag v-for="alias in row.aliases || []" :key="alias" size="small" closable @close="handleDeleteAlias(row, alias)" class="alias-tag">
-                        {{ alias }}
+        <el-table :data="list">
+            <el-table-column prop="name" :label="$t('common.name')" sortable width="220">
+                <template #default="{ row }">
+                    <el-link type="primary" underline="never" @click="handleDataOperation(row.name)">{{ row.name }}</el-link>
+                </template>
+            </el-table-column>
+            <el-table-column prop="created_time" :label="$t('common.createTime')" sortable width="160" />
+            <el-table-column :label="$t('milvus.loadStatus')" width="100">
+                <template #default="{ row }">
+                    <el-tag v-if="row.Loaded" type="success" @click="handleReleaseClick(row)" style="cursor: pointer">
+                        {{ $t('milvus.loaded') }}
                     </el-tag>
-                    <el-button size="small" text @click="handleAddAlias(row)" icon="plus" class="add-alias-btn">
-                        {{ $t('milvus.addAlias') }}
-                    </el-button>
-                </div>
-            </template>
-        </el-table-column>
-        <el-table-column :label="$t('common.operation')" width="250">
-            <template #default="{ row }">
-                <el-space>
-                    <el-button size="small" type="warning" @click="handleEdit(row)" text>{{ $t('common.edit') }}</el-button>
-                    <el-button size="small" type="primary" text @click="handleCopy(row)">{{ $t('common.copy') }}</el-button>
-                    <el-button size="small" @click="handleDescribe(row)" text>{{ $t('milvus.detail') }}</el-button>
-                    <el-button size="small" type="danger" @click="handleDrop(row)" text>{{ $t('common.delete') }}</el-button>
-                </el-space>
-            </template>
-        </el-table-column>
-    </el-table>
-
+                    <el-tag v-else-if="row.LoadedPercentage > 0 && row.LoadedPercentage < 100" type="warning">
+                        {{ $t('milvus.loading') }} {{ row.LoadedPercentage }}%
+                    </el-tag>
+                    <el-tag v-else type="info" @click="handleLoadClick(row)" style="cursor: pointer">
+                        {{ $t('milvus.unloaded') }}
+                    </el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column :label="$t('milvus.aliases')" min-width="200">
+                <template #default="{ row }">
+                    <div class="alias-container">
+                        <el-tag v-for="alias in row.aliases || []" :key="alias" size="small" closable @close="handleDeleteAlias(row, alias)" class="alias-tag">
+                            {{ alias }}
+                        </el-tag>
+                        <el-button size="small" text @click="handleAddAlias(row)" icon="plus" class="add-alias-btn">
+                            {{ $t('milvus.addAlias') }}
+                        </el-button>
+                    </div>
+                </template>
+            </el-table-column>
+            <el-table-column :label="$t('common.operation')" width="250">
+                <template #default="{ row }">
+                    <el-space>
+                        <el-button size="small" type="warning" @click="handleEdit(row)" text>{{ $t('common.edit') }}</el-button>
+                        <el-button size="small" type="primary" text @click="handleCopy(row)">{{ $t('common.copy') }}</el-button>
+                        <el-button size="small" @click="handleDescribe(row)" text>{{ $t('milvus.detail') }}</el-button>
+                        <el-button size="small" type="danger" @click="handleDrop(row)" text>{{ $t('common.delete') }}</el-button>
+                    </el-space>
+                </template>
+            </el-table-column>
+        </el-table>
     </div>
 
     <CollectionsCreate v-model:visible="createDrawerVisible" :milvus-id="milvusId" :mode="drawerMode" :edit-data="editData" @success="loadList" />
@@ -304,16 +303,13 @@ onBeforeUnmount(() => {
     stopPolling();
 });
 
-watch(
-    [() => props.milvusId, () => milvusStore.authCertName],
-    async () => {
-        list.value = [];
-        milvusStore.clear();
-        await milvusStore.refreshDbs(props.milvusId);
-        milvusApi.useDatabase(props.milvusId, 'default');
-        await loadList();
-    }
-);
+watch([() => props.milvusId, () => milvusStore.authCertName], async () => {
+    list.value = [];
+    milvusStore.clear();
+    await milvusStore.refreshDbs(props.milvusId);
+    milvusApi.useDatabase(props.milvusId, 'default');
+    await loadList();
+});
 </script>
 
 <style scoped>

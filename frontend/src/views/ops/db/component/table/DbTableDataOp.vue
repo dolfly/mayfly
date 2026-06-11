@@ -12,7 +12,6 @@
                         width="auto"
                         :title="$t('db.tableFieldConf')"
                         trigger="click"
-                        :teleported="false"
                         @hide="triggerCheckedColumns"
                     >
                         <div><el-input v-model="checkedShowColumns.searchKey" size="small" :placeholder="$t('db.columnFilterPlaceholder')" /></div>
@@ -46,16 +45,16 @@
                     <el-link @click="onShowAddDataDialog()" type="primary" icon="plus" underline="never"></el-link>
                     <el-divider direction="vertical" border-style="dashed" />
 
-                    <el-tooltip :show-after="500" effect="dark" content="commit" placement="top" :teleported="false">
+                    <el-tooltip :show-after="500" effect="dark" content="commit" placement="top">
                         <el-link @click="onCommit()" type="success" icon="CircleCheck" underline="never"> </el-link>
                     </el-tooltip>
                     <el-divider direction="vertical" border-style="dashed" />
 
-                    <el-tooltip :show-after="500" v-if="hasUpdatedFileds" :content="$t('db.submitUpdate')" placement="top" :teleported="false">
+                    <el-tooltip :show-after="500" v-if="hasUpdatedFileds" :content="$t('db.submitUpdate')" placement="top">
                         <el-link @click="submitUpdateFields()" type="success" underline="never" class="!text-[12px]">{{ $t('common.submit') }}</el-link>
                     </el-tooltip>
                     <el-divider v-if="hasUpdatedFileds" direction="vertical" border-style="dashed" />
-                    <el-tooltip :show-after="500" v-if="hasUpdatedFileds" :content="$t('db.cancelUpdate')" placement="top" :teleported="false">
+                    <el-tooltip :show-after="500" v-if="hasUpdatedFileds" :content="$t('db.cancelUpdate')" placement="top">
                         <el-link @click="cancelUpdateFields" type="warning" underline="never" class="!text-[12px]">{{ $t('common.cancel') }}</el-link>
                     </el-tooltip>
                 </div>
@@ -75,7 +74,6 @@
                     highlight-first-item
                     value-key="columnName"
                     ref="condInputRef"
-                    :teleported="false"
                 >
                     <template #suffix>
                         <SvgIcon @click="onSelectByCondition" name="search" />
@@ -97,7 +95,7 @@
                     </template>
 
                     <template #prepend>
-                        <el-popover :visible="state.condPopVisible" trigger="click" :width="320" placement="right" :teleported="false">
+                        <el-popover :visible="state.condPopVisible" trigger="click" :width="320" placement="right">
                             <template #reference>
                                 <el-button @click.stop="chooseCondColumnName" style="color: var(--el-color-success)" text size="small">
                                     {{ $t('db.selectColumn') }}
@@ -187,7 +185,7 @@
                     <el-link class="op-page" underline="never" @click="++pageNum" :disabled="datas.length < pageSize" icon="Right" />
                     <el-link class="op-page" underline="never" @click="handleEndPage" :disabled="datas.length < pageSize" icon="DArrowRight" />
                     <div style="width: 90px" class="op-page ml-2">
-                        <el-select size="small" :default-first-option="true" v-model="pageSize" @change="handleSizeChange" :teleported="false">
+                        <el-select size="small" :default-first-option="true" v-model="pageSize" @change="handleSizeChange">
                             <el-option
                                 style="font-size: 12px; height: 24px; line-height: 24px"
                                 v-for="(op, i) in pageSizes"
@@ -208,7 +206,7 @@
         <el-dialog v-model="conditionDialog.visible" :title="conditionDialog.title" width="500px">
             <el-row gutter="5">
                 <el-col :span="5">
-                    <el-select v-model="conditionDialog.condition" :teleported="false">
+                    <el-select v-model="conditionDialog.condition">
                         <el-option label="=" value="="> </el-option>
                         <el-option label="LIKE" value="LIKE"> </el-option>
                         <el-option label=">" value=">"> </el-option>

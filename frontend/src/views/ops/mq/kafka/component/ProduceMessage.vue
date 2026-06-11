@@ -11,7 +11,7 @@
                             </el-space>
                         </template>
 
-                        <el-select v-model="form.topic" filterable :placeholder="$t('mq.kafka.selectTopicPlaceholder')" :teleported="false">
+                        <el-select v-model="form.topic" filterable :placeholder="$t('mq.kafka.selectTopicPlaceholder')">
                             <el-option v-for="topic in topics" :key="topic" :label="topic" :value="topic" />
                         </el-select>
                     </el-form-item>
@@ -23,7 +23,7 @@
                 </el-col>
                 <el-col :span="6">
                     <el-form-item :label="$t('mq.kafka.partition')">
-                        <el-tooltip :content="$t('mq.kafka.partitionPlaceholder')" :teleported="false">
+                        <el-tooltip :content="$t('mq.kafka.partitionPlaceholder')">
                             <el-input-number v-model="form.partition" :min="0" :max="100" />
                         </el-tooltip>
                     </el-form-item>

@@ -22,7 +22,7 @@
 
                 <template #suffix>
                     <!-- 时间转换 -->
-                    <el-tooltip effect="dark" placement="top" :teleported="false">
+                    <el-tooltip effect="dark" placement="top">
                         <template #content>{{ ttlConveter(ki.timed) }}</template>
                         <span class="ml-2">
                             <el-icon class="mr-1"><InfoFilled /></el-icon>

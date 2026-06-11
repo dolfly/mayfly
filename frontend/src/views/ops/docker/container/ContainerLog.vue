@@ -12,7 +12,7 @@
             <div class="flex flex-col flex-1">
                 <el-row :gutter="10" class="mb-2">
                     <el-col :span="6">
-                        <el-select @change="searchLog" v-model.number="state.tail" :teleported="false">
+                        <el-select @change="searchLog" v-model.number="state.tail">
                             <template #prefix>{{ $t('docker.lines') }}</template>
                             <el-option :value="100" :label="100" />
                             <el-option :value="200" :label="200" />

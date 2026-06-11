@@ -27,7 +27,6 @@
                             width="auto"
                             :title="$t('db.dbShowSetting')"
                             trigger="click"
-                            :teleported="false"
                         >
                             <el-row>
                                 <el-checkbox
@@ -91,7 +90,7 @@
             >
                 <el-tab-pane class="h-full!" closable v-for="dt in state.tabs.values()" :label="dt.label" :name="dt.key" :key="dt.key">
                     <template #label>
-                        <el-popover :show-after="1000" placement="bottom-start" trigger="hover" :width="250" :teleported="false">
+                        <el-popover :show-after="1000" placement="bottom-start" trigger="hover" :width="250">
                             <template #reference>
                                 <span @contextmenu.prevent="onTabContextmenu(dt, $event)" class="text-[12px]!">{{ dt.label }}</span>
                             </template>

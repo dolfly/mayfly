@@ -1,7 +1,7 @@
 <template>
-    <div class="mongo-data-tab card h-full !p-1 w-full flex flex-col">
+    <div class="mongo-data-tab card h-full p-1! w-full flex flex-col">
         <el-row v-if="nowColl">
-            <el-descriptions class="!w-full" :column="10" size="small" border>
+            <el-descriptions class="w-full!" :column="10" size="small" border>
                 <!-- <el-descriptions-item label-align="right" label="tag">xxx</el-descriptions-item> -->
 
                 <el-descriptions-item label="ns" label-align="right">
@@ -29,7 +29,7 @@
         </el-row>
 
         <el-row type="flex" class="flex-1 min-h-0">
-            <el-tabs @tab-remove="removeDataTab" class="!w-full ml-1 h-full flex flex-col" v-model="state.activeName">
+            <el-tabs @tab-remove="removeDataTab" class="w-full! ml-1 h-full flex flex-col" v-model="state.activeName">
                 <el-tab-pane closable v-for="dt in state.dataTabs" :key="dt.key" :label="dt.label" :name="dt.key">
                     <el-row>
                         <el-col :span="2">
@@ -61,12 +61,7 @@
 
                                             <el-divider direction="vertical" border-style="dashed" />
 
-                                            <el-popconfirm
-                                                @confirm="onDeleteDoc(item.value)"
-                                                :title="$t('mongo.deleteDocConfirm')"
-                                                width="160"
-                                                :teleported="false"
-                                            >
+                                            <el-popconfirm @confirm="onDeleteDoc(item.value)" :title="$t('mongo.deleteDocConfirm')" width="160">
                                                 <template #reference>
                                                     <el-link v-auth="perms.delData" underline="never" type="danger" icon="DocumentDelete"> </el-link>
                                                 </template>
@@ -126,10 +121,8 @@ import { isTrue, notBlank } from '@/common/assert';
 import { formatByteSize } from '@/common/utils/format';
 import { Msg } from '@/hooks/useI18n';
 import { mongoApi } from '@/views/ops/mongo/api';
-import { ResourceOpCtxKey } from '@/views/ops/resource/resourceOp';
-import { computed, defineAsyncComponent, inject, onMounted, reactive, ref, toRefs } from 'vue';
+import { computed, defineAsyncComponent, onMounted, reactive, ref, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ResourceOpCtx } from '../../component/tag';
 
 const MonacoEditor = defineAsyncComponent(() => import('@/components/monaco/MonacoEditor.vue'));
 
@@ -139,8 +132,6 @@ const perms = {
     saveData: 'mongo:data:save',
     delData: 'mongo:data:del',
 };
-
-const resourceOpCtx: ResourceOpCtx | undefined = inject(ResourceOpCtxKey);
 
 const props = defineProps<{
     tabKey?: string;

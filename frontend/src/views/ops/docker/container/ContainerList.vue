@@ -2,149 +2,151 @@
     <div class="component-container">
         <div class="card !p-2">
             <el-row justify="space-between">
-            <el-col :span="16">
-                <el-row :gutter="5">
-                    <el-col :span="6">
-                        <el-input :placeholder="$t('docker.containerName')" v-model="params.name" plain clearable></el-input>
-                    </el-col>
-                    <el-col :span="6">
-                        <EnumSelect v-model="params.state" :enums="ContainerStateEnum" :placeholder="$t('docker.status')" clearable />
-                    </el-col>
-                    <el-col :span="8">
-                        <el-button @click="getContainers" type="primary" icon="refresh" circle plain></el-button>
-                    </el-col>
-                </el-row>
-            </el-col>
+                <el-col :span="16">
+                    <el-row :gutter="5">
+                        <el-col :span="6">
+                            <el-input :placeholder="$t('docker.containerName')" v-model="params.name" plain clearable></el-input>
+                        </el-col>
+                        <el-col :span="6">
+                            <EnumSelect v-model="params.state" :enums="ContainerStateEnum" :placeholder="$t('docker.status')" clearable />
+                        </el-col>
+                        <el-col :span="8">
+                            <el-button @click="getContainers" type="primary" icon="refresh" circle plain></el-button>
+                        </el-col>
+                    </el-row>
+                </el-col>
 
-            <el-col :span="8">
-                <el-row justify="end">
-                    <el-button @click="openContainerCreate" type="success" icon="plus" plain>{{ $t('docker.createContainer') }}</el-button>
-                </el-row>
-            </el-col>
-        </el-row>
+                <el-col :span="8">
+                    <el-row justify="end">
+                        <el-button @click="openContainerCreate" type="success" icon="plus" plain>{{ $t('docker.createContainer') }}</el-button>
+                    </el-row>
+                </el-col>
+            </el-row>
         </div>
 
         <el-table :data="filterTableDatas" v-loading="state.loadingContainers">
-        <el-table-column prop="name" :label="$t('docker.name')" :min-width="120" show-overflow-tooltip> </el-table-column>
-        <el-table-column prop="imageName" :label="$t('docker.image')" :min-width="150" show-overflow-tooltip> </el-table-column>
+            <el-table-column prop="name" :label="$t('docker.name')" :min-width="120" show-overflow-tooltip> </el-table-column>
+            <el-table-column prop="imageName" :label="$t('docker.image')" :min-width="150" show-overflow-tooltip> </el-table-column>
 
-        <el-table-column prop="state" :label="$t('common.status')" :min-width="110">
-            <template #default="{ row }">
-                <el-dropdown @command="handleCommand" :teleported="false">
-                    <el-button :type="EnumValue.getEnumByValue(ContainerStateEnum, row.state)?.tag.type" round plain size="small">
-                        {{ $t(EnumValue.getLabelByValue(ContainerStateEnum, row.state)) || '-' }}
-                        <SvgIcon class="ml-1" :name="EnumValue.getEnumByValue(ContainerStateEnum, row.state)?.extra.icon" />
-                    </el-button>
-
-                    <template #dropdown>
-                        <el-dropdown-menu>
-                            <el-dropdown-item :command="{ type: 'restart', row }">
-                                {{ $t('docker.restart') }}
-                            </el-dropdown-item>
-
-                            <el-dropdown-item :disabled="row.state == ContainerStateEnum.Stop.value" :command="{ type: 'stop', row }">
-                                {{ $t('docker.stop') }}
-                            </el-dropdown-item>
-                        </el-dropdown-menu>
-                    </template>
-                </el-dropdown>
-            </template>
-        </el-table-column>
-
-        <el-table-column v-loading="true" prop="stats" :label="$t('docker.stats')" :min-width="130">
-            <template #default="{ row }">
-                <SvgIcon v-if="getLoadingState(row.containerId)" class="is-loading" name="loading" color="var(--el-color-primary)" />
-
-                <span v-else-if="row.stats">
-                    <el-row>
-                        <el-text size="small" class="font11">
-                            CPU:
-                            <span>{{ Number(row.stats.cpuPercent).toFixed(2) }}%</span>
-                        </el-text>
-                    </el-row>
-
-                    <el-row>
-                        <el-text size="small" class="font11">
-                            {{ $t('docker.memory') }}:
-                            <span>{{ Number(row.stats.memoryPercent).toFixed(2) }}%</span>
-                        </el-text>
-
-                        <el-popover placement="right" :width="300" trigger="hover" :teleported="false">
-                            <template #reference>
-                                <SvgIcon class="mt5 ml5" color="var(--el-color-primary)" name="MoreFilled" />
-                            </template>
-
-                            <el-row>
-                                <el-col :span="12">
-                                    <el-statistic :title="$t('CPU使用')" :value="row.stats.cpuTotalUsage" :formatter="formatCpuValue" :precision="2">
-                                    </el-statistic>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-statistic :title="$t('CPU总计')" :value="row.stats.systemUsage" :formatter="formatCpuValue" :precision="2">
-                                    </el-statistic>
-                                </el-col>
-                            </el-row>
-
-                            <el-row>
-                                <el-col :span="12">
-                                    <el-statistic :title="$t('内存使用')" :value="row.stats.memoryUsage" :formatter="formatByteSize" :precision="2">
-                                    </el-statistic>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-statistic :title="$t('内存限额')" :value="row.stats.memoryLimit" :formatter="formatByteSize" :precision="2">
-                                    </el-statistic>
-                                </el-col>
-                            </el-row>
-                        </el-popover>
-                    </el-row>
-                </span>
-
-                <span v-else>-</span>
-            </template>
-        </el-table-column>
-
-        <el-table-column prop="networks" :label="$t('docker.ip')" :min-width="110">
-            <template #default="scope">
-                <el-tag v-for="network in scope.row.networks" :key="network" type="primary">{{ network || '-' }}</el-tag>
-            </template>
-        </el-table-column>
-
-        <el-table-column prop="ports" :label="$t('machine.port')" :min-width="160">
-            <template #default="scope">
-                <el-tag v-for="port in scope.row.ports" :key="port" type="primary">{{ port }}</el-tag>
-            </template>
-        </el-table-column>
-
-        <el-table-column prop="createTime" :label="$t('common.createTime')" width="160">
-            <template #default="scope">
-                {{ formatDate(scope.row.createTime) }}
-            </template>
-        </el-table-column>
-
-        <el-table-column prop="status" label="运行时长" :min-width="120"> </el-table-column>
-
-        <el-table-column :label="$t('common.operation')" :min-width="180">
-            <template #default="{ row }">
-                <el-row>
-                    <el-button @click="openTerminal(row)" :disabled="row.state != ContainerStateEnum.Running.value" type="primary" link plain> SSH </el-button>
-
-                    <el-button @click="openLog(row)" type="success" link plain>{{ $t('docker.log') }}</el-button>
-
-                    <el-dropdown @command="handleCommand" :teleported="false">
-                        <el-button type="primary" link plain class="ml-3"> {{ $t('common.more') }} <SvgIcon name="arrow-down" :size="12" /> </el-button>
+            <el-table-column prop="state" :label="$t('common.status')" :min-width="110">
+                <template #default="{ row }">
+                    <el-dropdown @command="handleCommand">
+                        <el-button :type="EnumValue.getEnumByValue(ContainerStateEnum, row.state)?.tag.type" round plain size="small">
+                            {{ $t(EnumValue.getLabelByValue(ContainerStateEnum, row.state)) || '-' }}
+                            <SvgIcon class="ml-1" :name="EnumValue.getEnumByValue(ContainerStateEnum, row.state)?.extra.icon" />
+                        </el-button>
 
                         <template #dropdown>
                             <el-dropdown-menu>
-                                <el-dropdown-item :command="{ type: 'remove', row }">
-                                    {{ $t('common.delete') }}
+                                <el-dropdown-item :command="{ type: 'restart', row }">
+                                    {{ $t('docker.restart') }}
+                                </el-dropdown-item>
+
+                                <el-dropdown-item :disabled="row.state == ContainerStateEnum.Stop.value" :command="{ type: 'stop', row }">
+                                    {{ $t('docker.stop') }}
                                 </el-dropdown-item>
                             </el-dropdown-menu>
                         </template>
                     </el-dropdown>
-                </el-row>
-            </template>
-        </el-table-column>
-    </el-table>
+                </template>
+            </el-table-column>
+
+            <el-table-column v-loading="true" prop="stats" :label="$t('docker.stats')" :min-width="130">
+                <template #default="{ row }">
+                    <SvgIcon v-if="getLoadingState(row.containerId)" class="is-loading" name="loading" color="var(--el-color-primary)" />
+
+                    <span v-else-if="row.stats">
+                        <el-row>
+                            <el-text size="small" class="font11">
+                                CPU:
+                                <span>{{ Number(row.stats.cpuPercent).toFixed(2) }}%</span>
+                            </el-text>
+                        </el-row>
+
+                        <el-row>
+                            <el-text size="small" class="font11">
+                                {{ $t('docker.memory') }}:
+                                <span>{{ Number(row.stats.memoryPercent).toFixed(2) }}%</span>
+                            </el-text>
+
+                            <el-popover placement="right" :width="300" trigger="hover">
+                                <template #reference>
+                                    <SvgIcon class="mt5 ml5" color="var(--el-color-primary)" name="MoreFilled" />
+                                </template>
+
+                                <el-row>
+                                    <el-col :span="12">
+                                        <el-statistic :title="$t('CPU使用')" :value="row.stats.cpuTotalUsage" :formatter="formatCpuValue" :precision="2">
+                                        </el-statistic>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-statistic :title="$t('CPU总计')" :value="row.stats.systemUsage" :formatter="formatCpuValue" :precision="2">
+                                        </el-statistic>
+                                    </el-col>
+                                </el-row>
+
+                                <el-row>
+                                    <el-col :span="12">
+                                        <el-statistic :title="$t('内存使用')" :value="row.stats.memoryUsage" :formatter="formatByteSize" :precision="2">
+                                        </el-statistic>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <el-statistic :title="$t('内存限额')" :value="row.stats.memoryLimit" :formatter="formatByteSize" :precision="2">
+                                        </el-statistic>
+                                    </el-col>
+                                </el-row>
+                            </el-popover>
+                        </el-row>
+                    </span>
+
+                    <span v-else>-</span>
+                </template>
+            </el-table-column>
+
+            <el-table-column prop="networks" :label="$t('docker.ip')" :min-width="110">
+                <template #default="scope">
+                    <el-tag v-for="network in scope.row.networks" :key="network" type="primary">{{ network || '-' }}</el-tag>
+                </template>
+            </el-table-column>
+
+            <el-table-column prop="ports" :label="$t('machine.port')" :min-width="160">
+                <template #default="scope">
+                    <el-tag v-for="port in scope.row.ports" :key="port" type="primary">{{ port }}</el-tag>
+                </template>
+            </el-table-column>
+
+            <el-table-column prop="createTime" :label="$t('common.createTime')" width="160">
+                <template #default="scope">
+                    {{ formatDate(scope.row.createTime) }}
+                </template>
+            </el-table-column>
+
+            <el-table-column prop="status" label="运行时长" :min-width="120"> </el-table-column>
+
+            <el-table-column :label="$t('common.operation')" :min-width="180">
+                <template #default="{ row }">
+                    <el-row>
+                        <el-button @click="openTerminal(row)" :disabled="row.state != ContainerStateEnum.Running.value" type="primary" link plain>
+                            SSH
+                        </el-button>
+
+                        <el-button @click="openLog(row)" type="success" link plain>{{ $t('docker.log') }}</el-button>
+
+                        <el-dropdown @command="handleCommand">
+                            <el-button type="primary" link plain class="ml-3"> {{ $t('common.more') }} <SvgIcon name="arrow-down" :size="12" /> </el-button>
+
+                            <template #dropdown>
+                                <el-dropdown-menu>
+                                    <el-dropdown-item :command="{ type: 'remove', row }">
+                                        {{ $t('common.delete') }}
+                                    </el-dropdown-item>
+                                </el-dropdown-menu>
+                            </template>
+                        </el-dropdown>
+                    </el-row>
+                </template>
+            </el-table-column>
+        </el-table>
     </div>
 
     <el-dialog

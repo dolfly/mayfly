@@ -32,7 +32,7 @@
                                     <el-button class="!ml-1" type="primary" circle size="small" icon="Refresh" @click="refresh()"> </el-button>
 
                                     <!-- 文件&文件夹上传 -->
-                                    <el-dropdown class="machine-file-upload-exec" trigger="click" size="small" :teleported="false">
+                                    <el-dropdown class="machine-file-upload-exec" trigger="click" size="small">
                                         <span>
                                             <el-button
                                                 v-auth="'machine:file:upload'"
@@ -131,7 +131,7 @@
                                     </el-button>
 
                                     <el-button-group v-if="state.copyOrMvFile.paths.length > 0" size="small" class="!ml-1">
-                                        <el-tooltip effect="customized" raw-content placement="top" :teleported="false">
+                                        <el-tooltip effect="customized" raw-content placement="top">
                                             <template #content>
                                                 <div v-for="path in state.copyOrMvFile.paths" v-bind:key="path">{{ path }}</div>
                                             </template>
@@ -206,7 +206,7 @@
 
                     <el-table-column :width="100">
                         <template #header>
-                            <el-popover placement="top" :width="270" trigger="hover" :teleported="false">
+                            <el-popover placement="top" :width="270" trigger="hover">
                                 <template #reference>
                                     <SvgIcon name="QuestionFilled" :size="18" class="pointer-icon mr-2" />
                                 </template>

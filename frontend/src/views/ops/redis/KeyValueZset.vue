@@ -21,7 +21,7 @@
                     </template>
                     <template #default="scope">
                         <el-link @click="showEditDialog(scope.row)" underline="never" type="primary" icon="edit" plain></el-link>
-                        <el-popconfirm :title="$t('redis.deleteConfirm')" @confirm="zrem(scope.row, scope.$index)" :teleported="false">
+                        <el-popconfirm :title="$t('redis.deleteConfirm')" @confirm="zrem(scope.row, scope.$index)">
                             <template #reference>
                                 <el-link v-auth="'redis:data:del'" underline="never" type="danger" icon="delete" size="small" plain class="ml-1"></el-link>
                             </template>
